@@ -27,11 +27,6 @@ EX3_SRS/
 ```
 
 ---
-## Justification
-
-[doc](https://docs.google.com/document/d/1j4psyMPPyhkBAgybqP1QvR26h9MuieuiFNBwUaGbQWg/edit?usp=sharing)
-
----
 ## Setup & Run Locally
 
 ### 1. Clone the repository
@@ -83,8 +78,12 @@ python manage.py runserver
 Open [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin) and log in with the superuser credentials created in step 5.
 
 ---
+## Justification
 
+[doc](https://docs.google.com/document/d/1j4psyMPPyhkBAgybqP1QvR26h9MuieuiFNBwUaGbQWg/edit?usp=sharing)
+
+---
 ## CRUD Evidence
-
-
+[demo video](https://youtu.be/2D5Z9Am61D8)
+![django admin](pic/CRUDevidence.png)
 ---
