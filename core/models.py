@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator
 from django.utils import timezone
 import uuid
@@ -50,12 +49,14 @@ class SongStatus(models.TextChoices):
 #  User
 # ─────────────────────────────────────────────
 
-class User(AbstractUser):
+class User(models.Model):
     """
-    Core identity entity.
-    AbstractUser supplies: username, email, password, is_active, etc.
+    Registered individual.
+    Plain model — authentication is out of scope for Exercise 3.
     """
-    email = models.EmailField(unique=True)
+    username   = models.CharField(max_length=150, unique=True)
+    email      = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'user'
@@ -95,7 +96,7 @@ class Profile(models.Model):
 class Library(models.Model):
     """
     Collection container owned by exactly one User.
-    Business rule: max 20 songs — enforced in services.py.
+    Max 20 songs — enforced before creating a Song.
     """
     MAX_SONGS = 20
 
@@ -113,11 +114,11 @@ class Library(models.Model):
         return self.songs.count() >= self.MAX_SONGS
 
     @property
-    def current_song_count(self):
+    def song_count(self):
         return self.songs.count()
 
     def __str__(self):
-        return f"Library({self.user.username}, {self.current_song_count}/{self.MAX_SONGS})"
+        return f"Library({self.user.username}, {self.song_count}/{self.MAX_SONGS})"
 
 
 # ─────────────────────────────────────────────
@@ -127,9 +128,13 @@ class Library(models.Model):
 class Song(models.Model):
     """
     An AI-generated musical composition stored in a Library.
-    - duration stored in seconds; max 600 s (10 min).
-    - Only 'ready' songs may be played, downloaded, or shared.
-    - Parameters are always preserved regardless of status (even failed).
+
+    - Song has NO title field of its own.
+      The title comes from SongParameters.title — the user provides it
+      as part of the generation parameters, and SongParameters creates the Song.
+    - duration in seconds; max 600 s (10 minutes).
+    - All songs (generating, ready, failed) live in the library.
+    - Only 'ready' songs can be played, downloaded, or shared.
     """
     MAX_DURATION_SECONDS = 600  # 10 minutes
 
@@ -138,13 +143,11 @@ class Song(models.Model):
         on_delete=models.CASCADE,
         related_name='songs'
     )
-    title       = models.CharField(max_length=255)
     status      = models.CharField(
         max_length=20,
         choices=SongStatus.choices,
         default=SongStatus.GENERATING
     )
-    # stored in seconds; 0–600
     duration    = models.PositiveIntegerField(
         default=0,
         validators=[MaxValueValidator(MAX_DURATION_SECONDS)]
@@ -155,6 +158,14 @@ class Song(models.Model):
 
     class Meta:
         db_table = 'song'
+
+    @property
+    def title(self):
+        """Title is owned by SongParameters, not Song."""
+        try:
+            return self.parameters.title
+        except SongParameters.DoesNotExist:
+            return '(no title)'
 
     @property
     def is_accessible(self):
@@ -171,27 +182,33 @@ class Song(models.Model):
 
 class SongParameters(models.Model):
     """
-    User preferences that guided song generation.
-    Always preserved — even when a song fails or is retried.
-    Deleted only when the song itself is explicitly deleted by the user.
-    custom_text is the only optional field.
+    User preferences that define and create the song.
+
+    - title, occasion, genre, voice_type are REQUIRED.
+    - custom_text is the only OPTIONAL field.
+    - SongParameters is what the user fills in to generate a song.
+      Creating SongParameters effectively creates the Song.
+    - Always preserved even when the song fails or is retried.
+    - Deleted only when the song itself is explicitly deleted.
     """
     song        = models.OneToOneField(
         Song,
         on_delete=models.CASCADE,
         related_name='parameters'
     )
+    # Required fields
     title       = models.CharField(max_length=255)
     occasion    = models.CharField(max_length=20, choices=Occasion.choices)
     genre       = models.CharField(max_length=20, choices=Genre.choices)
     voice_type  = models.CharField(max_length=20, choices=VoiceType.choices)
-    custom_text = models.TextField(blank=True, default='')  # optional
+    # Optional field
+    custom_text = models.TextField(blank=True, default='')
 
     class Meta:
         db_table = 'song_parameters'
 
     def __str__(self):
-        return f"Params(song={self.song_id}, {self.occasion}, {self.genre})"
+        return f"Params({self.title}, {self.occasion}, {self.genre})"
 
 
 # ─────────────────────────────────────────────
@@ -202,7 +219,7 @@ class ShareLink(models.Model):
     """
     Temporary access token for sharing a Song.
     Valid only when is_active=True AND expiration_date >= today.
-    Songs are private by default (no ShareLink exists).
+    Songs are private by default — no ShareLink exists until created.
     Deleted when its Song is deleted.
     """
     song            = models.ForeignKey(
@@ -220,6 +237,8 @@ class ShareLink(models.Model):
 
     @property
     def is_valid(self):
+        if not self.expiration_date:
+            return False
         return self.is_active and self.expiration_date >= timezone.now().date()
 
     def __str__(self):
