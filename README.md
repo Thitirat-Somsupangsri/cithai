@@ -18,12 +18,13 @@ EX3_SRS/
 │   ├── migrations/  
 │   ├── admin.py 
 │   ├── apps.py
-│   ├── models.py 
-│   ├── views.py
+│   ├── models/
+│   ├── views/
 │   └── tests.py
 ├── manage.py
 ├── .gitignore
 └── README.md
+└── requirement.txt
 ```
 
 ---
@@ -32,8 +33,7 @@ EX3_SRS/
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd EX3_SRS
+git clone https://github.com/Thitirat-Somsupangsri/cithai.git
 ```
 
 ### 2. Create and activate a virtual environment
@@ -85,5 +85,14 @@ Open [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin) and log in with 
 ---
 ## CRUD Evidence
 [demo video](https://youtu.be/2D5Z9Am61D8)
-![django admin](pic/CRUDevidence.png)
+for users
+![django admin](pic/users.png)
+for profiles
+![django admin](pic/profiles.png)
+for songs
+![django admin](pic/songs.png)
+for libraries
+![django admin](pic/libraries.png)
+for sharelinks
+![django admin](pic/sharelinks.png)
 ---

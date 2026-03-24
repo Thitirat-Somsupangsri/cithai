@@ -16,7 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from core.views import (
+    UserListView, UserDetailView,
+    ProfileView,
+    SongListView, SongDetailView,
+    ShareLinkListView, ShareLinkDetailView,
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls), 
+    path('users/', UserListView.as_view(), name='user-list'),
+    path('users/<int:user_id>/', UserDetailView.as_view(), name='user-detail'),
+    path('users/<int:user_id>/profile/', ProfileView.as_view(), name='user-profile'),
+    path('users/<int:user_id>/songs/', SongListView.as_view(), name='song-list'),
+    path('users/<int:user_id>/songs/<int:song_id>/', SongDetailView.as_view(), name='song-detail'),
+    path('users/<int:user_id>/songs/<int:song_id>/share-links/', ShareLinkListView.as_view(), name='share-link-list'),
+    path('share-links/<uuid:token>/', ShareLinkDetailView.as_view(), name='share-link-detail'),
 ]
