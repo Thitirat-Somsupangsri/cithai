@@ -34,6 +34,7 @@ EX3_SRS/
 
 ```bash
 git clone https://github.com/Thitirat-Somsupangsri/cithai.git
+cd cithai
 ```
 
 ### 2. Create and activate a virtual environment
