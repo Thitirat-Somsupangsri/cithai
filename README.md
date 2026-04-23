@@ -141,6 +141,11 @@ Run tests:
 python3 manage.py test core
 ```
 
+## Example Run Output / Logs
+
+- Mock generation evidence: [docs/evidence/mock-generation.md](/Users/thitiratss/srs/ex3_srs/docs/evidence/mock-generation.md:1)
+- Suno generation evidence: [docs/evidence/suno-generation.md](/Users/thitiratss/srs/ex3_srs/docs/evidence/suno-generation.md:1)
+
 ## Notes
 
 - Mock mode is the easiest way to verify the project end-to-end.
