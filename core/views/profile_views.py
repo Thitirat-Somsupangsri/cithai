@@ -4,7 +4,16 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-from ..models import User, Profile
+from ..presenters import present_profile
+from ..services import (
+    ProfileAlreadyExistsError,
+    ProfileCreatePayload,
+    ProfileNotFoundError,
+    ProfilePayloadValidationError,
+    ProfileService,
+    ProfileUpdatePayload,
+    ProfileUserNotFoundError,
+)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -18,87 +27,50 @@ class ProfileView(View):
     DELETE → delete profile only (User is preserved)
     """
 
-    def _get_user(self, user_id):
-        try:
-            return User.objects.get(pk=user_id), None
-        except User.DoesNotExist:
-            return None, JsonResponse({'error': 'User not found'}, status=404)
+    profile_service = ProfileService()
 
     def get(self, request, user_id):
-        user, err = self._get_user(user_id)
-        if err:
-            return err
         try:
-            p = user.profile
-        except Profile.DoesNotExist:
-            return JsonResponse({'error': 'Profile not found'}, status=404)
-
-        return JsonResponse({
-            'id':       p.id,
-            'user_id':  user.id,
-            'gender':   p.gender,
-            'birthday': p.birthday.isoformat(),
-        })
+            profile = self.profile_service.get_profile(user_id)
+        except (ProfileNotFoundError, ProfileUserNotFoundError) as exc:
+            return JsonResponse({'error': str(exc)}, status=exc.status_code)
+        return JsonResponse(present_profile(profile))
 
     def post(self, request, user_id):
-        user, err = self._get_user(user_id)
-        if err:
-            return err
-
-        if Profile.objects.filter(user=user).exists():
-            return JsonResponse({'error': 'Profile already exists for this user'}, status=409)
-
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-        gender   = data.get('gender', '').strip()
-        birthday = data.get('birthday', '').strip()
-
-        if not gender or not birthday:
-            return JsonResponse({'error': 'gender and birthday are required'}, status=400)
-
-        p = Profile.objects.create(user=user, gender=gender, birthday=birthday)
-        return JsonResponse({
-            'id':       p.id,
-            'user_id':  user.id,
-            'gender':   p.gender,
-            'birthday': p.birthday.isoformat(),
-        }, status=201)
+        try:
+            profile = self.profile_service.create_profile(user_id, ProfileCreatePayload.from_dict(data))
+        except (
+            ProfileAlreadyExistsError,
+            ProfilePayloadValidationError,
+            ProfileUserNotFoundError,
+        ) as exc:
+            return JsonResponse({'error': str(exc)}, status=exc.status_code)
+        return JsonResponse(present_profile(profile), status=201)
 
     def put(self, request, user_id):
-        user, err = self._get_user(user_id)
-        if err:
-            return err
-        try:
-            p = user.profile
-        except Profile.DoesNotExist:
-            return JsonResponse({'error': 'Profile not found'}, status=404)
-
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-        if 'gender' in data:
-            p.gender = data['gender']
-        if 'birthday' in data:
-            p.birthday = data['birthday']
-
-        p.save()
-        return JsonResponse({
-            'id':       p.id,
-            'gender':   p.gender,
-            'birthday': p.birthday.isoformat(),
-        })
+        try:
+            profile = self.profile_service.update_profile(user_id, ProfileUpdatePayload.from_dict(data))
+        except (
+            ProfileNotFoundError,
+            ProfilePayloadValidationError,
+            ProfileUserNotFoundError,
+        ) as exc:
+            return JsonResponse({'error': str(exc)}, status=exc.status_code)
+        return JsonResponse(present_profile(profile))
 
     def delete(self, request, user_id):
-        user, err = self._get_user(user_id)
-        if err:
-            return err
         try:
-            user.profile.delete()
-        except Profile.DoesNotExist:
-            return JsonResponse({'error': 'Profile not found'}, status=404)
+            self.profile_service.delete_profile(user_id)
+        except (ProfileNotFoundError, ProfileUserNotFoundError) as exc:
+            return JsonResponse({'error': str(exc)}, status=exc.status_code)
         return JsonResponse({'message': f'Profile for user {user_id} deleted'})

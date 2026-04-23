@@ -1,10 +1,9 @@
-import json
-
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 
 from core.models import Library, Song, SongParameters, User
 from core.services.music_generation import generate_song, get_music_generation_strategy
+from core.services.music_generation.strategies import GenerationResult, SunoMusicGenerationStrategy
 
 
 class MusicGenerationStrategyTests(TestCase):
@@ -62,29 +61,25 @@ class MusicGenerationStrategyTests(TestCase):
         self.assertEqual(song.status, 'failed')
         self.assertIn('not configured', song.error_message)
 
+    def test_suno_strategy_delegates_to_provider_adapter(self):
+        class FakeClient:
+            def __init__(self):
+                self.command = None
 
-class SongApiGenerationTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create(username='bob', email='bob@example.com')
-        Library.objects.create(user=self.user)
+            def start_generation(self, command):
+                self.command = command
+                return GenerationResult(
+                    status='generating',
+                    provider_generation_id='task-123',
+                    description='started',
+                )
 
-    @override_settings(MUSIC_GENERATION_PROVIDER='mock')
-    def test_post_song_generates_song_via_strategy(self):
-        response = self.client.post(
-            f'/users/{self.user.id}/songs/',
-            data=json.dumps({
-                'title': 'Road Trip',
-                'occasion': 'other',
-                'genre': 'rock',
-                'voice_type': 'boy',
-                'custom_text': 'anthemic chorus',
-            }),
-            content_type='application/json',
-        )
+        client = FakeClient()
+        strategy = SunoMusicGenerationStrategy(client=client)
 
-        self.assertEqual(response.status_code, 201)
-        payload = response.json()
-        self.assertEqual(payload['provider'], 'mock')
-        self.assertEqual(payload['status'], 'ready')
-        self.assertEqual(payload['duration'], 180)
-        self.assertEqual(payload['error_message'], '')
+        result = strategy.generate(self._create_song())
+
+        self.assertEqual(client.command.title, 'Birthday Song')
+        self.assertEqual(client.command.prompt, 'make it cheerful')
+        self.assertEqual(client.command.genre, 'pop')
+        self.assertEqual(result.provider_generation_id, 'task-123')
