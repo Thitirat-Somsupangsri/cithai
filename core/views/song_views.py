@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 from ..models import Library, Song, SongParameters, SongStatus
+from ..services.music_generation import generate_song
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -67,11 +68,17 @@ class SongListView(View):
             voice_type  = data['voice_type'],
             custom_text = data.get('custom_text', ''),
         )
+        song = generate_song(song)
 
         return JsonResponse({
-            'id':     song.id,
-            'title':  song.title,
-            'status': song.status,
+            'id':                     song.id,
+            'title':                  song.title,
+            'provider':               song.provider,
+            'provider_generation_id': song.provider_generation_id,
+            'status':                 song.status,
+            'duration':               song.duration,
+            'description':            song.description,
+            'error_message':          song.error_message,
         }, status=201)
 
 
@@ -100,9 +107,12 @@ class SongDetailView(View):
         return JsonResponse({
             'id':          song.id,
             'title':       song.title,
+            'provider':    song.provider,
+            'provider_generation_id': song.provider_generation_id,
             'status':      song.status,
             'duration':    song.duration,
             'description': song.description,
+            'error_message': song.error_message,
             'occasion':    song.parameters.occasion   if hasattr(song, 'parameters') else None,
             'genre':       song.parameters.genre      if hasattr(song, 'parameters') else None,
             'voice_type':  song.parameters.voice_type if hasattr(song, 'parameters') else None,
@@ -130,10 +140,13 @@ class SongDetailView(View):
 
         song.save()
         return JsonResponse({
-            'id':       song.id,
-            'title':    song.title,
-            'status':   song.status,
-            'duration': song.duration,
+            'id':                     song.id,
+            'title':                  song.title,
+            'provider':               song.provider,
+            'provider_generation_id': song.provider_generation_id,
+            'status':                 song.status,
+            'duration':               song.duration,
+            'error_message':          song.error_message,
         })
 
     def delete(self, request, user_id, song_id):

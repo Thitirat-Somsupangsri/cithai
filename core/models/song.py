@@ -22,6 +22,8 @@ class Song(models.Model):
         on_delete=models.CASCADE,
         related_name='songs'
     )
+    provider    = models.CharField(max_length=20, default='mock')
+    provider_generation_id = models.CharField(max_length=255, blank=True, default='')
     status      = models.CharField(
         max_length=20,
         choices=SongStatus.choices,
@@ -32,6 +34,7 @@ class Song(models.Model):
         validators=[MaxValueValidator(MAX_DURATION_SECONDS)]
     )
     description = models.TextField(blank=True, default='')
+    error_message = models.TextField(blank=True, default='')
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -116,3 +117,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MUSIC_GENERATION_PROVIDER = os.getenv('MUSIC_GENERATION_PROVIDER', 'mock')
+SUNO_API_URL = os.getenv('SUNO_API_URL', '')
+SUNO_API_KEY = os.getenv('SUNO_API_KEY', '')
+SUNO_CALLBACK_URL = os.getenv('SUNO_CALLBACK_URL', 'https://example.com/suno/callback')
+SUNO_MODEL = os.getenv('SUNO_MODEL', 'V4_5ALL')
+SUNO_CUSTOM_MODE = os.getenv('SUNO_CUSTOM_MODE', 'false').lower() == 'true'
+SUNO_INSTRUMENTAL = os.getenv('SUNO_INSTRUMENTAL', 'false').lower() == 'true'
