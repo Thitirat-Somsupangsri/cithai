@@ -21,6 +21,7 @@ from core.views import (
     ProfileView,
     SongListView, SongDetailView,
     ShareLinkListView, ShareLinkDetailView,
+    SunoCallbackView,
 )
 
 urlpatterns = [
@@ -32,4 +33,5 @@ urlpatterns = [
     path('users/<int:user_id>/songs/<int:song_id>/', SongDetailView.as_view(), name='song-detail'),
     path('users/<int:user_id>/songs/<int:song_id>/share-links/', ShareLinkListView.as_view(), name='share-link-list'),
     path('share-links/<uuid:token>/', ShareLinkDetailView.as_view(), name='share-link-detail'),
+    path('integrations/suno/callback/', SunoCallbackView.as_view(), name='suno-callback'),
 ]

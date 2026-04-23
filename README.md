@@ -1,34 +1,8 @@
-# EX3_SRS – Cithai AI Music Generator (Domain Layer)
+# EX3_SRS – Cithai AI Music Generator
 
-Exercise 3: Implementing the Domain Layer using Django
-**Kasetsart University**
+Exercise project implemented with Django.
 
----
-
-## Project Structure
-
-```
-EX3_SRS/
-├── config/ 
-│   ├── settings.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   └── asgi.py
-├── core/        
-│   ├── migrations/  
-│   ├── admin.py 
-│   ├── apps.py
-│   ├── models/
-│   ├── views/
-│   └── tests.py
-├── manage.py
-├── .gitignore
-└── README.md
-└── requirement.txt
-```
-
----
-## Setup & Run Locally
+## How to install
 
 ### 1. Clone the repository
 
@@ -40,60 +14,154 @@ cd cithai
 ### 2. Create and activate a virtual environment
 
 ```bash
-python -m venv venv
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-# macOS / Linux
-source venv/bin/activate
+Windows:
 
-# Windows
-venv\Scripts\activate
+```bash
+.venv\Scripts\activate
 ```
 
 ### 3. Install dependencies
 
 ```bash
-pip install django
+pip install -r requirements.txt
 ```
 
-### 4. Apply migrations
+### 4. Create your environment file
 
 ```bash
-python manage.py makemigrations
-python manage.py migrate
+cp .env.example .env
 ```
 
-### 5. Create a superuser (for Django Admin)
+Available environment variables:
+
+```env
+MUSIC_GENERATION_PROVIDER=mock
+SUNO_API_URL=https://api.suno.example/api/v1/generate
+SUNO_API_KEY=your_suno_api_key_here
+SUNO_CALLBACK_URL=https://your-domain.example/suno/callback
+SUNO_MODEL=V4_5ALL
+SUNO_CUSTOM_MODE=false
+SUNO_INSTRUMENTAL=false
+```
+
+### 5. Set up Suno API secrets
+
+If you want to run in `suno` mode:
+
+1. Get a valid Suno API key from your Suno API provider account.
+2. Put the key into `SUNO_API_KEY` in `.env`.
+3. Set `SUNO_API_URL` to the Suno generate endpoint.
+4. Set `SUNO_CALLBACK_URL` to a public URL that points to:
+
+```text
+/integrations/suno/callback/
+```
+
+For local development, `localhost` is usually not reachable by Suno directly. You will usually need a public tunnel such as `ngrok` or another reverse-tunnel service, then set:
+
+```env
+SUNO_CALLBACK_URL=https://your-public-url.example/integrations/suno/callback/
+```
+
+### 6. Apply migrations
 
 ```bash
-python manage.py createsuperuser
+python3 manage.py migrate
 ```
 
-### 6. Run the development server
+### 7. Optional: create a superuser
 
 ```bash
-python manage.py runserver
+python3 manage.py createsuperuser
 ```
 
-### 7. Access Django Admin
+## How to run
 
-Open [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin) and log in with the superuser credentials created in step 5.
+### Run in Mock mode
 
----
-## Justification
+Set this in `.env`:
 
-[doc](https://docs.google.com/document/d/1j4psyMPPyhkBAgybqP1QvR26h9MuieuiFNBwUaGbQWg/edit?usp=sharing)
+```env
+MUSIC_GENERATION_PROVIDER=mock
+```
 
----
+Then run:
+
+```bash
+python3 manage.py runserver
+```
+
+Behavior in this mode:
+
+- Song generation finishes immediately.
+- No external API key is required.
+- Useful for demo and testing.
+
+### Run in Suno mode
+
+Set this in `.env`:
+
+```env
+MUSIC_GENERATION_PROVIDER=suno
+SUNO_API_URL=https://api.sunoapi.org/api/v1/generate
+SUNO_API_KEY=your_real_suno_api_key
+SUNO_CALLBACK_URL=https://your-public-url.example/integrations/suno/callback/
+SUNO_MODEL=V4_5ALL
+SUNO_CUSTOM_MODE=false
+SUNO_INSTRUMENTAL=false
+```
+
+Then run:
+
+```bash
+python3 manage.py runserver
+```
+
+Behavior in this mode:
+
+- Creating a song starts an async generation task on Suno.
+- The app stores Suno `taskId` in `provider_generation_id`.
+- Suno sends the final result back to:
+
+```text
+POST /integrations/suno/callback/
+```
+
+- The callback updates the local song status to `ready` or `failed`.
+
+## Verify the project
+
+Run tests:
+
+```bash
+python3 manage.py test core
+```
+
+## Notes
+
+- Mock mode is the easiest way to verify the project end-to-end.
+- Suno mode requires valid credentials and a reachable callback URL.
+- The current app stores one local `Song` per Suno task. When Suno returns multiple generated tracks in the callback, the app currently uses the first returned track as the representative result for that local song.
+
 ## CRUD Evidence
+
 [demo video](https://youtu.be/2D5Z9Am61D8)
-for users
+
+Users:
 ![django admin](pic/users.png)
-for profiles
+
+Profiles:
 ![django admin](pic/profiles.png)
-for songs
+
+Songs:
 ![django admin](pic/songs.png)
-for libraries
+
+Libraries:
 ![django admin](pic/libraries.png)
-for sharelinks
+
+Share links:
 ![django admin](pic/sharelinks.png)
----
