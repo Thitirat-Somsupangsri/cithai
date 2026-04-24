@@ -36,6 +36,15 @@ class SunoCallbackService:
         if status == SongStatus.READY:
             song.description = first_track.get('title') or payload.get('msg', '')
             song.error_message = ''
+            audio_url = (
+                first_track.get('audio_url')
+                or first_track.get('stream_audio_url')
+                or first_track.get('streamAudioUrl')
+                or first_track.get('audioUrl')
+                or ''
+            )
+            if audio_url:
+                song.audio_url = audio_url
         elif status == SongStatus.FAILED:
             song.error_message = payload.get('msg', 'Suno generation failed.')
 

@@ -35,6 +35,7 @@ class Song(models.Model):
     )
     description = models.TextField(blank=True, default='')
     error_message = models.TextField(blank=True, default='')
+    audio_url   = models.URLField(max_length=2048, blank=True, default='')
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 

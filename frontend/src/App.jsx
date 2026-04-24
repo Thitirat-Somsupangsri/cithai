@@ -39,6 +39,78 @@ function useGsapFadeUp(ref, deps = []) {
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
+function useAudioPlayback() {
+  const audioRef = useRef(null);
+  const [activeSongId, setActiveSongId] = useState(null);
+  const [playbackError, setPlaybackError] = useState("");
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    function handleEnded() {
+      setActiveSongId(null);
+    }
+
+    function handleError() {
+      setActiveSongId(null);
+      setPlaybackError("This song could not be played.");
+    }
+
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+    };
+  }, []);
+
+  async function toggleSong(song) {
+    const audio = audioRef.current;
+    if (!audio || !song?.audio_url) return;
+
+    setPlaybackError("");
+
+    if (activeSongId === song.id && !audio.paused) {
+      audio.pause();
+      setActiveSongId(null);
+      return;
+    }
+
+    if (audio.src !== song.audio_url) {
+      audio.src = song.audio_url;
+      audio.load();
+    }
+
+    try {
+      await audio.play();
+      setActiveSongId(song.id);
+    } catch {
+      setActiveSongId(null);
+      setPlaybackError("Playback was blocked. Try pressing play again.");
+    }
+  }
+
+  function stopPlayback() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    setActiveSongId(null);
+  }
+
+  return {
+    audioRef,
+    activeSongId,
+    playbackError,
+    setActiveSongId,
+    setPlaybackError,
+    stopPlayback,
+    toggleSong,
+  };
+}
+
 /* ─── App Root ──────────────────────────────────────────────── */
 export default function App() {
   return (
@@ -353,13 +425,42 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
   const [regeneratingId, setRegeneratingId] = useState(null);
+  const [completionNotice, setCompletionNotice] = useState("");
   const ref = useRef(null);
+  const previousStatusesRef = useRef(new Map());
+  const {
+    audioRef,
+    activeSongId,
+    playbackError,
+    stopPlayback,
+    toggleSong,
+  } = useAudioPlayback();
   useGsapFadeUp(ref, [songs.length]);
 
   const filteredSongs = useMemo(() => {
     if (activeFilter === "all") return songs;
     return songs.filter((s) => s.status === activeFilter);
   }, [songs, activeFilter]);
+
+  useEffect(() => {
+    const previousStatuses = previousStatusesRef.current;
+    const completedSongs = songs.filter(
+      (song) => previousStatuses.get(song.id) === "generating" && song.status === "ready"
+    );
+
+    if (completedSongs.length > 0) {
+      const nextNotice =
+        completedSongs.length === 1
+          ? `"${completedSongs[0].title}" is ready. You can play it from the Ready tab.`
+          : `${completedSongs.length} songs are ready. You can play them from the Ready tab.`;
+      setCompletionNotice(nextNotice);
+      if (activeFilter === "generating") {
+        setActiveFilter("ready");
+      }
+    }
+
+    previousStatusesRef.current = new Map(songs.map((song) => [song.id, song.status]));
+  }, [activeFilter, songs]);
 
   const filterItems = [
     { key: "all",        label: "All",        count: songs.length },
@@ -371,6 +472,9 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   async function handleDelete(e, songId) {
     e.stopPropagation();
     if (!confirm("Delete this song?")) return;
+    if (activeSongId === songId) {
+      stopPlayback();
+    }
     setDeletingId(songId);
     try {
       await deleteSong(currentUser.id, songId);
@@ -387,20 +491,26 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
     setRegeneratingId(songId);
     try {
       const detail = await getSongById(currentUser.id, songId);
-      await createSong(currentUser.id, {
+      const regeneratedSong = await createSong(currentUser.id, {
         title: detail.title,
         occasion: detail.occasion,
         genre: detail.genre,
         voice_type: detail.voice_type,
         custom_text: detail.custom_text || "",
       });
-      setActiveFilter("generating");
+      await deleteSong(currentUser.id, songId);
+      setActiveFilter(regeneratedSong.status === "failed" ? "failed" : "generating");
       onSongsChange();
     } catch {
       alert("Could not regenerate this song. Please try again.");
     } finally {
       setRegeneratingId(null);
     }
+  }
+
+  async function handlePlayToggle(e, song) {
+    e.stopPropagation();
+    await toggleSong(song);
   }
 
   const readyCount = songs.filter((s) => s.status === "ready").length;
@@ -430,6 +540,7 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
         <div className="songs-panel fade-up fade-up-delay-1">
           <div className="section-head">
             <h3>Song Library</h3>
+            <p className="section-hint">Finished generations appear in <strong>Ready</strong>.</p>
           </div>
 
           <div className="filter-bar" role="tablist">
@@ -445,6 +556,26 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
               </button>
             ))}
           </div>
+
+          {completionNotice && (
+            <div className="library-notice">
+              <span>{completionNotice}</span>
+              {activeFilter !== "ready" && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setActiveFilter("ready")}
+                >
+                  View Ready
+                </button>
+              )}
+            </div>
+          )}
+
+          {playbackError && (
+            <div className="inline-error" style={{ marginBottom: 18 }}>
+              {playbackError}
+            </div>
+          )}
 
           {filteredSongs.length === 0 ? (
             <div className="song-empty">
@@ -464,12 +595,16 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
                   onClick={() => navigate(`/songs/${song.id}`)}
                   onDelete={(e) => handleDelete(e, song.id)}
                   onRegenerate={(e) => handleRegenerate(e, song.id)}
+                  onPlayToggle={(e) => handlePlayToggle(e, song)}
+                  isPlaying={activeSongId === song.id}
                   deleting={deletingId === song.id}
                   regenerating={regeneratingId === song.id}
                 />
               ))}
             </div>
           )}
+
+          <audio ref={audioRef} preload="none" hidden />
         </div>
       </main>
     </Shell>
@@ -477,7 +612,7 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
 }
 
 /* ─── Song Card ─────────────────────────────────────────────── */
-function SongCard({ song, onClick, onDelete, onRegenerate, deleting, regenerating }) {
+function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlaying, deleting, regenerating }) {
   const date = new Date(song.created_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -518,6 +653,14 @@ function SongCard({ song, onClick, onDelete, onRegenerate, deleting, regeneratin
         <div className="song-card-actions" onClick={(e) => e.stopPropagation()}>
           {song.duration > 0 && (
             <span className="duration-badge">{formatDuration(song.duration)}</span>
+          )}
+          {song.status === "ready" && song.audio_url && (
+            <button
+              className={`btn btn-sm ${isPlaying ? "btn-ghost" : "btn-primary"}`}
+              onClick={onPlayToggle}
+            >
+              {isPlaying ? "Pause" : "Play Song"}
+            </button>
           )}
           {song.status === "failed" && (
             <button
@@ -687,6 +830,15 @@ function SongDetailPage({ currentUser, onChange }) {
   const [regenerating, setRegenerating] = useState(false);
   const navigate = useNavigate();
   const ref = useRef(null);
+  const {
+    audioRef,
+    activeSongId,
+    playbackError,
+    setActiveSongId,
+    setPlaybackError,
+    stopPlayback,
+    toggleSong,
+  } = useAudioPlayback();
 
   useEffect(() => {
     let active = true;
@@ -707,10 +859,18 @@ function SongDetailPage({ currentUser, onChange }) {
 
   useGsapFadeUp(ref, [loading]);
 
+  useEffect(() => {
+    if (!song || song.status === "ready" || activeSongId !== song.id) return;
+    stopPlayback();
+  }, [activeSongId, song, stopPlayback]);
+
   async function handleDelete() {
     if (!confirm("Delete this song permanently?")) return;
     setDeleting(true);
     try {
+      if (activeSongId === Number(songId)) {
+        stopPlayback();
+      }
       await deleteSong(currentUser.id, songId);
       onChange();
       navigate("/library");
@@ -724,19 +884,26 @@ function SongDetailPage({ currentUser, onChange }) {
     if (!song) return;
     setRegenerating(true);
     try {
-      await createSong(currentUser.id, {
+      const regeneratedSong = await createSong(currentUser.id, {
         title: song.title,
         occasion: song.occasion,
         genre: song.genre,
         voice_type: song.voice_type,
         custom_text: song.custom_text || "",
       });
+      await deleteSong(currentUser.id, songId);
       onChange();
-      navigate("/library");
+      navigate(`/songs/${regeneratedSong.id}`);
     } catch {
       alert("Could not regenerate this song.");
       setRegenerating(false);
     }
+  }
+
+  async function handlePlayToggle() {
+    if (!song) return;
+    setPlaybackError("");
+    await toggleSong(song);
   }
 
   const date = song
@@ -800,6 +967,12 @@ function SongDetailPage({ currentUser, onChange }) {
                 </div>
               )}
 
+              {playbackError && (
+                <div className="inline-error" style={{ marginBottom: 20 }}>
+                  {playbackError}
+                </div>
+              )}
+
               <div className="detail-grid">
                 <div className="detail-cell">
                   <p className="detail-cell-label">Occasion</p>
@@ -830,6 +1003,29 @@ function SongDetailPage({ currentUser, onChange }) {
                 <div className="detail-section">
                   <p className="detail-section-label">Generated Description</p>
                   <p>{song.description}</p>
+                </div>
+              )}
+
+              {song.status === "ready" && song.audio_url && (
+                <div className="detail-section">
+                  <p className="detail-section-label">Playback</p>
+                  <div className="detail-player">
+                    <button className={`btn ${activeSongId === song.id ? "btn-ghost" : "btn-primary"}`} onClick={handlePlayToggle}>
+                      {activeSongId === song.id ? "Pause" : "Play Song"}
+                    </button>
+                    <audio
+                      ref={audioRef}
+                      controls
+                      preload="none"
+                      src={song.audio_url}
+                      onPlay={() => setActiveSongId(song.id)}
+                      onPause={() => {
+                        if (!audioRef.current?.ended) {
+                          setActiveSongId(null);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

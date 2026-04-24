@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ...models import Library
 from ...presenters import present_song_generation, present_song_summary
+from ...services.generation_timeout_service import GenerationTimeoutService
 from ...services import (
     LibraryFullError,
     LibraryNotFoundError,
@@ -19,6 +20,7 @@ from ...services import (
 @method_decorator(csrf_exempt, name='dispatch')
 class SongListView(View):
     creation_service = SongCreationService()
+    timeout_service = GenerationTimeoutService()
 
     def _get_library(self, user_id):
         try:
@@ -31,7 +33,9 @@ class SongListView(View):
         if err:
             return err
 
-        songs = [present_song_summary(song) for song in library.songs.select_related('parameters').all()]
+        qs = library.songs.select_related('parameters').all()
+        self.timeout_service.expire_timed_out_songs(qs)
+        songs = [present_song_summary(song) for song in qs]
         return JsonResponse({'songs': songs, 'count': len(songs)})
 
     def post(self, request, user_id):

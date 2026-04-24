@@ -52,6 +52,8 @@ SUNO_API_URL=https://api.suno.example/api/v1/generate
 SUNO_API_KEY=your_suno_api_key_here
 SUNO_CALLBACK_URL=
 BACKEND_PUBLIC_URL=https://your-public-url.example
+NGROK_AUTHTOKEN=your_ngrok_authtoken
+NGROK_URL=https://your-ngrok-url.ngrok-free.app
 SUNO_MODEL=V4_5ALL
 SUNO_CUSTOM_MODE=false
 SUNO_INSTRUMENTAL=false
@@ -92,6 +94,14 @@ Then copy the public HTTPS URL and set:
 
 ```env
 BACKEND_PUBLIC_URL=https://your-public-url.example
+```
+
+If you want to keep the ngrok values in `.env`, use:
+
+```env
+NGROK_AUTHTOKEN=your_ngrok_authtoken
+NGROK_URL=https://your-ngrok-url.ngrok-free.app
+BACKEND_PUBLIC_URL=https://your-ngrok-url.ngrok-free.app
 ```
 
 or explicitly:

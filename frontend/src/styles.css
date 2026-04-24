@@ -447,6 +447,16 @@ label span {
   text-transform: uppercase;
 }
 
+.section-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.section-hint strong {
+  color: var(--pink);
+  font-weight: 700;
+}
+
 .filter-bar { display: flex; gap: 7px; margin-bottom: 18px; flex-wrap: wrap; }
 
 .filter-tab {
@@ -483,6 +493,22 @@ label span {
   border: 1.5px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
+}
+
+.library-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--pink-ultra);
+  border: 1.5px solid var(--line);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex-wrap: wrap;
 }
 
 .song-grid {
@@ -885,6 +911,15 @@ label span {
   white-space: pre-wrap;
 }
 
+.detail-player {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-player audio {
+  width: 100%;
+}
+
 .detail-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
 
 /* ─── Duration Badge ────────────────────────────────────────── */
@@ -933,4 +968,5 @@ label span {
 @media (max-width: 480px) {
   .auth-card { padding: 26px 18px; }
   .songs-panel { padding: 14px; }
+  .library-notice { align-items: flex-start; }
 }

@@ -7,10 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ...models import Song
 from ...presenters import present_song_detail, present_song_generation
+from ...services.generation_timeout_service import GenerationTimeoutService
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SongDetailView(View):
+    timeout_service = GenerationTimeoutService()
     def _get_song(self, user_id, song_id):
         try:
             song = Song.objects.select_related('parameters').get(
@@ -25,6 +27,7 @@ class SongDetailView(View):
         song, err = self._get_song(user_id, song_id)
         if err:
             return err
+        self.timeout_service.expire_if_timed_out(song)
         return JsonResponse(present_song_detail(song))
 
     def put(self, request, user_id, song_id):

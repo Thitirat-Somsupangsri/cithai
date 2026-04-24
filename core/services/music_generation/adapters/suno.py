@@ -31,6 +31,8 @@ class SunoApiAdapter(MusicProviderClient):
             headers={
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {config.api_key}',
+                'User-Agent': 'Mozilla/5.0 (compatible; Cithai/1.0)',
+                'Accept': 'application/json',
             },
             method='POST',
         )
