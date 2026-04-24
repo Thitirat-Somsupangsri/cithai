@@ -12,9 +12,57 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_simple_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+
+        key, value = line.split('=', 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+_load_simple_env_file(BASE_DIR / '.env')
+
+
+def _join_public_url(base_url, path):
+    if not base_url:
+        return ''
+
+    parsed = urlsplit(base_url.strip())
+    if not parsed.scheme or not parsed.netloc:
+        return ''
+
+    normalized_path = path if path.startswith('/') else f'/{path}'
+    return urlunsplit((parsed.scheme, parsed.netloc, normalized_path, '', ''))
+
+
+def _looks_like_placeholder_callback(url):
+    if not url:
+        return True
+
+    parsed = urlsplit(url.strip())
+    hostname = (parsed.hostname or '').lower()
+    if not hostname:
+        return True
+
+    return (
+        hostname in {'example.com', 'localhost', '127.0.0.1'}
+        or hostname.endswith('.example')
+        or 'example.' in hostname
+        or hostname.endswith('.local')
+    )
 
 
 # Quick-start development settings - unsuitable for production
@@ -123,7 +171,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MUSIC_GENERATION_PROVIDER = os.getenv('MUSIC_GENERATION_PROVIDER', 'mock')
 SUNO_API_URL = os.getenv('SUNO_API_URL', '')
 SUNO_API_KEY = os.getenv('SUNO_API_KEY', '')
-SUNO_CALLBACK_URL = os.getenv('SUNO_CALLBACK_URL', 'https://example.com/suno/callback')
+BACKEND_PUBLIC_URL = os.getenv('BACKEND_PUBLIC_URL', '').strip()
+_EXPLICIT_SUNO_CALLBACK_URL = os.getenv('SUNO_CALLBACK_URL', '').strip()
+SUNO_CALLBACK_URL = (
+    _EXPLICIT_SUNO_CALLBACK_URL
+    if _EXPLICIT_SUNO_CALLBACK_URL and not _looks_like_placeholder_callback(_EXPLICIT_SUNO_CALLBACK_URL)
+    else _join_public_url(BACKEND_PUBLIC_URL, '/integrations/suno/callback/')
+)
 SUNO_MODEL = os.getenv('SUNO_MODEL', 'V4_5ALL')
 SUNO_CUSTOM_MODE = os.getenv('SUNO_CUSTOM_MODE', 'false').lower() == 'true'
 SUNO_INSTRUMENTAL = os.getenv('SUNO_INSTRUMENTAL', 'false').lower() == 'true'
+
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', '')
+GOOGLE_OAUTH_AUTH_URI = os.getenv('GOOGLE_OAUTH_AUTH_URI', 'https://accounts.google.com/o/oauth2/v2/auth')
+GOOGLE_OAUTH_TOKEN_URI = os.getenv('GOOGLE_OAUTH_TOKEN_URI', 'https://oauth2.googleapis.com/token')
+GOOGLE_OAUTH_USERINFO_URI = os.getenv('GOOGLE_OAUTH_USERINFO_URI', 'https://openidconnect.googleapis.com/v1/userinfo')
+GOOGLE_OAUTH_SCOPES = os.getenv('GOOGLE_OAUTH_SCOPES', 'openid email profile').split()
+FRONTEND_APP_URL = os.getenv('FRONTEND_APP_URL', 'http://127.0.0.1:5173')

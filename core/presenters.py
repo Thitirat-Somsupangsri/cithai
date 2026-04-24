@@ -1,10 +1,14 @@
 def present_song_summary(song):
+    params = getattr(song, 'parameters', None)
     return {
         'id': song.id,
         'title': song.title,
         'status': song.status,
         'duration': song.duration,
         'description': song.description,
+        'occasion': params.occasion if params else None,
+        'genre': params.genre if params else None,
+        'voice_type': params.voice_type if params else None,
         'created_at': song.created_at.isoformat(),
     }
 

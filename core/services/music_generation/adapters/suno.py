@@ -2,48 +2,35 @@ import json
 import urllib.error
 import urllib.request
 
-from django.conf import settings
-
 from ..strategies.base import GenerationResult, SongGenerationError
 from .base import MusicProviderClient
+from .suno_config import SunoConfig
 
 
 class SunoApiAdapter(MusicProviderClient):
     def start_generation(self, command):
-        api_key = getattr(settings, 'SUNO_API_KEY', '')
-        api_url = getattr(settings, 'SUNO_API_URL', '').strip()
-        callback_url = getattr(settings, 'SUNO_CALLBACK_URL', '').strip()
-        model = getattr(settings, 'SUNO_MODEL', 'V4_5ALL')
-        custom_mode = getattr(settings, 'SUNO_CUSTOM_MODE', False)
-        instrumental = getattr(settings, 'SUNO_INSTRUMENTAL', False)
-
-        if not api_key:
-            raise SongGenerationError('Suno API key is not configured.')
-        if not api_url:
-            raise SongGenerationError('Suno API URL is not configured.')
-        if not callback_url:
-            raise SongGenerationError('Suno callback URL is not configured.')
+        config = SunoConfig.from_settings()
 
         payload = {
-            'customMode': custom_mode,
-            'instrumental': instrumental,
-            'callBackUrl': callback_url,
-            'model': model,
+            'customMode': config.custom_mode,
+            'instrumental': config.instrumental,
+            'callBackUrl': config.callback_url,
+            'model': config.model,
             'prompt': command.prompt,
         }
 
-        if custom_mode:
+        if config.custom_mode:
             payload['title'] = command.title
             payload['style'] = command.genre
-            if instrumental:
+            if config.instrumental:
                 payload['prompt'] = ''
 
         request = urllib.request.Request(
-            api_url,
+            config.api_url,
             data=json.dumps(payload).encode('utf-8'),
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}',
+                'Authorization': f'Bearer {config.api_key}',
             },
             method='POST',
         )

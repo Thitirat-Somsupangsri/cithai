@@ -9,8 +9,8 @@ from core.services.music_generation.adapters import ProviderGenerationCommand, S
 class SunoApiAdapterTests(TestCase):
     @override_settings(
         SUNO_API_KEY='secret',
-        SUNO_API_URL='https://api.example.com/generate',
-        SUNO_CALLBACK_URL='https://app.example.com/callback',
+        SUNO_API_URL='https://api.sunoapi.org/api/v1/generate',
+        SUNO_CALLBACK_URL='https://my-app.trycloudflare.com/integrations/suno/callback/',
         SUNO_MODEL='V4_5ALL',
         SUNO_CUSTOM_MODE=True,
         SUNO_INSTRUMENTAL=False,
@@ -49,8 +49,8 @@ class SunoApiAdapterTests(TestCase):
 
     @override_settings(
         SUNO_API_KEY='',
-        SUNO_API_URL='https://api.example.com/generate',
-        SUNO_CALLBACK_URL='https://app.example.com/callback',
+        SUNO_API_URL='https://api.sunoapi.org/api/v1/generate',
+        SUNO_CALLBACK_URL='https://my-app.trycloudflare.com/integrations/suno/callback/',
     )
     def test_adapter_rejects_missing_config(self):
         adapter = SunoApiAdapter()

@@ -21,11 +21,14 @@ from core.views import (
     ProfileView,
     SongListView, SongDetailView,
     ShareLinkListView, ShareLinkDetailView,
+    GoogleLoginView, GoogleCallbackView,
     SunoCallbackView,
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls), 
+    path('auth/google/login/', GoogleLoginView.as_view(), name='google-login'),
+    path('auth/google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:user_id>/', UserDetailView.as_view(), name='user-detail'),
     path('users/<int:user_id>/profile/', ProfileView.as_view(), name='user-profile'),
