@@ -24,7 +24,10 @@ import {
 } from "./store";
 import "./styles.css";
 
-const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+const BACKEND_BASE_URL =
+  typeof window === "undefined"
+    ? "http://127.0.0.1:8000"
+    : `${window.location.protocol}//${window.location.hostname}:8000`;
 
 /* ─── GSAP helper (loaded via CDN) ────────────────────────── */
 function useGsapFadeUp(ref, deps = []) {
@@ -127,7 +130,11 @@ function AppRoutes() {
   const [hydrated, setHydrated] = useState(false);
   const [startupError, setStartupError] = useState("");
 
-  const refresh = () => setVersion((v) => v + 1);
+  const refresh = () => {
+    // Pause route protection until the latest session has been rehydrated.
+    setHydrated(false);
+    setVersion((v) => v + 1);
+  };
 
   useEffect(() => {
     let active = true;
@@ -306,7 +313,10 @@ function LoginPage({ currentUser, onChange, startupError }) {
         <button
           className="btn btn-ghost"
           style={{ width: "100%" }}
-          onClick={() => { window.location.href = `${BACKEND_BASE_URL}/auth/google/login/`; }}
+          onClick={() => {
+            const frontendOrigin = encodeURIComponent(window.location.origin);
+            window.location.href = `${BACKEND_BASE_URL}/auth/google/login/?frontend_origin=${frontendOrigin}`;
+          }}
         >
           Continue with Google
         </button>
