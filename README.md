@@ -141,7 +141,29 @@ That callback cannot be delivered to `localhost` or `127.0.0.1` from the public 
 
 #### ngrok: install and connect your account
 
-Install `ngrok` using the method for your platform, then sign in to your ngrok account and copy your auth token.
+Install `ngrok` using the method for your platform:
+
+macOS with Homebrew:
+
+```bash
+brew install ngrok/ngrok/ngrok
+```
+
+Windows with Winget:
+
+```bash
+winget install Ngrok.Ngrok
+```
+
+Linux with Snap:
+
+```bash
+sudo snap install ngrok
+```
+
+Or download it directly from [ngrok.com/download](https://ngrok.com/download).
+
+After installing, sign in to your ngrok account and copy your auth token.
 
 If you keep your ngrok CLI credentials in `.env`, you can store:
 
