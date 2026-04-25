@@ -12,7 +12,7 @@
   --text:          #3b1f42;
   --text-2:        #7b5a72;
   --muted:         #b892ac;
-  --line:          rgba(235, 146, 186, 0.22);
+  --line:          rgba(74, 74, 74, 0.65);
 
   --pink:          #f06aa7;
   --pink-dark:     #d94d8e;
@@ -142,7 +142,7 @@ h3 { font-size: 1.05rem; }
   display: grid;
   place-items: center;
   background: var(--pink-light);
-  border: 1.5px solid var(--pink-pastel);
+  border: 1.5px solid var(--line);
   color: var(--pink-dark);
   cursor: pointer;
   transition: background var(--transition);
@@ -218,14 +218,14 @@ h3 { font-size: 1.05rem; }
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--pink-ultra);
-  border-color: var(--pink-pastel);
+  border-color: var(--line);
   color: var(--pink);
 }
 
 .btn-danger {
   background: var(--danger-dim);
   color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.18);
+  border: 1px solid var(--line);
 }
 .btn-danger:hover:not(:disabled) { background: #fce4e4; }
 
@@ -335,7 +335,7 @@ input, select, textarea {
 input::placeholder, textarea::placeholder { color: var(--muted); }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--pink-pastel);
+  border-color: var(--line);
   box-shadow: none;
   background: var(--surface);
 }
@@ -358,7 +358,7 @@ label span {
   color: var(--danger);
   font-size: 0.84rem;
   font-weight: 600;
-  border: 1px solid rgba(239, 68, 68, 0.18);
+  border: 1px solid var(--line);
 }
 
 .char-count {
@@ -476,7 +476,7 @@ label span {
 
 .filter-tab.active {
   background: var(--pink);
-  border-color: var(--pink);
+  border-color: var(--line);
   color: #fff;
   box-shadow: none;
 }
@@ -568,7 +568,7 @@ label span {
 .song-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-pink);
-  border-color: var(--pink-pastel);
+  border-color: var(--line);
 }
 
 .song-card-header {
@@ -604,9 +604,9 @@ label span {
   flex-shrink: 0;
 }
 
-.status-ready      { background: var(--success-dim); color: #16a34a; border: 1px solid rgba(34,197,94,0.22); }
-.status-generating { background: var(--pink-ultra);  color: var(--pink);  border: 1.5px solid var(--pink-pastel); }
-.status-failed     { background: var(--danger-dim);  color: var(--danger); border: 1px solid rgba(239,68,68,0.18); }
+.status-ready      { background: var(--success-dim); color: #16a34a; border: 1px solid var(--line); }
+.status-generating { background: var(--pink-ultra);  color: var(--pink);  border: 1.5px solid var(--line); }
+.status-failed     { background: var(--danger-dim);  color: var(--danger); border: 1px solid var(--line); }
 
 .status-dot {
   width: 5px; height: 5px;
@@ -926,7 +926,7 @@ label span {
   padding: 4px 13px;
   border-radius: 999px;
   background: var(--pink-light);
-  border: 1px solid var(--pink-pastel);
+  border: 1px solid var(--line);
   color: var(--pink-dark);
   font-size: 0.76rem;
   font-weight: 700;

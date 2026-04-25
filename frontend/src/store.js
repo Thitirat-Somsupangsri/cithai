@@ -111,10 +111,10 @@ export async function listShareLinks(userId, songId) {
   return payload.share_links || [];
 }
 
-export async function createShareLink(userId, songId, expiration_date) {
+export async function createShareLink(userId, songId, expirationOption = "7_days") {
   return request(`/users/${userId}/songs/${songId}/share-links/`, {
     method: "POST",
-    body: JSON.stringify({ expiration_date }),
+    body: JSON.stringify({ expiration_option: expirationOption }),
   });
 }
 

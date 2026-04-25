@@ -857,7 +857,7 @@ function SongDetailPage({ currentUser, onChange }) {
   const [deleting, setDeleting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [shareLinks, setShareLinks] = useState([]);
-  const [newLinkDate, setNewLinkDate] = useState("");
+  const [newLinkExpirationOption, setNewLinkExpirationOption] = useState("7_days");
   const [creatingLink, setCreatingLink] = useState(false);
   const [showShareForm, setShowShareForm] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -957,9 +957,9 @@ function SongDetailPage({ currentUser, onChange }) {
     e.preventDefault();
     setCreatingLink(true);
     try {
-      const link = await createShareLink(currentUser.id, songId, newLinkDate);
+      const link = await createShareLink(currentUser.id, songId, newLinkExpirationOption);
       setShareLinks((prev) => [...prev, link]);
-      setNewLinkDate("");
+      setNewLinkExpirationOption("7_days");
       setShowShareForm(false);
     } catch (err) {
       alert(err.message || "Could not create share link.");
@@ -1125,14 +1125,14 @@ function SongDetailPage({ currentUser, onChange }) {
 
                   {showShareForm && (
                     <form onSubmit={handleCreateLink} style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
-                      <input
-                        type="date"
-                        value={newLinkDate}
-                        onChange={(e) => setNewLinkDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
-                        required
-                        style={{ flex: 1, borderRadius: "var(--radius-sm)", border: "1px solid var(--line)", padding: "6px 10px" }}
-                      />
+                      <select
+                        value={newLinkExpirationOption}
+                        onChange={(e) => setNewLinkExpirationOption(e.target.value)}
+                        style={{ flex: 1, borderRadius: "var(--radius-sm)", border: "1px solid var(--line)", padding: "6px 10px", background: "var(--bg)" }}
+                      >
+                        <option value="7_days">7 days</option>
+                        <option value="1_month">1 month</option>
+                      </select>
                       <button className="btn btn-primary btn-sm" type="submit" disabled={creatingLink}>
                         {creatingLink ? "Creating…" : "Create"}
                       </button>

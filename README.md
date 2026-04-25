@@ -278,6 +278,12 @@ GOOGLE_OAUTH_REDIRECT_URI=https://your-public-url.example/auth/google/callback/
 python3 manage.py migrate
 ```
 
+### Share link expiration options
+
+- `POST /users/{user_id}/songs/{song_id}/share-links/` accepts `expiration_option`
+- allowed values are `7_days` and `1_month`
+- if omitted, the backend defaults to `7_days`
+
 ### 9. Optional: create a superuser
 
 ```bash
