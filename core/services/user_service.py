@@ -1,56 +1,11 @@
-from dataclasses import dataclass
-
 from ..models import Library, User
-
-
-class UserServiceError(Exception):
-    status_code = 400
-
-
-class UserNotFoundError(UserServiceError):
-    status_code = 404
-
-
-class DuplicateUsernameError(UserServiceError):
-    status_code = 409
-
-
-class DuplicateEmailError(UserServiceError):
-    status_code = 409
-
-
-class UserPayloadValidationError(UserServiceError):
-    status_code = 400
-
-
-@dataclass(frozen=True)
-class UserCreatePayload:
-    username: str
-    email: str
-
-    @classmethod
-    def from_dict(cls, data):
-        username = str(data.get('username', '')).strip()
-        email = str(data.get('email', '')).strip()
-        if not username or not email:
-            raise UserPayloadValidationError('username and email are required')
-        return cls(username=username, email=email)
-
-
-@dataclass(frozen=True)
-class UserUpdatePayload:
-    username: str | None = None
-    email: str | None = None
-
-    @classmethod
-    def from_dict(cls, data):
-        payload = cls(
-            username=str(data['username']).strip() if 'username' in data else None,
-            email=str(data['email']).strip() if 'email' in data else None,
-        )
-        if payload.username == '' or payload.email == '':
-            raise UserPayloadValidationError('username and email cannot be blank')
-        return payload
+from .duplicate_email_error import DuplicateEmailError
+from .duplicate_username_error import DuplicateUsernameError
+from .user_create_payload import UserCreatePayload
+from .user_not_found_error import UserNotFoundError
+from .user_payload_validation_error import UserPayloadValidationError
+from .user_service_error import UserServiceError
+from .user_update_payload import UserUpdatePayload
 
 
 class UserService:

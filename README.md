@@ -2,6 +2,29 @@
 
 Exercise project implemented with Django backend + React/Vite frontend.
 
+## Project Status
+
+Status: `Complete`
+
+## Features
+
+- User creation and user detail management
+- Profile creation and update with gender and birthday
+- Personal library with a maximum of 20 songs per user
+- Song generation with two providers:
+  `mock` for local simulation
+  `suno` for external asynchronous generation
+- Song lifecycle states: `generating`, `ready`, `failed`
+- Library playback for ready songs with play, pause, previous, next, and seek controls
+- Mock playback asset for local end-to-end testing
+- Suno callback handling through `/integrations/suno/callback/`
+- Share link creation, resolution, expiration, and deactivation
+- Google OAuth login support
+- Django admin support for core entities
+
+## System Diagrams
+- domain model: ![domain_model.jpg](domain_model.jpg)
+
 ## How to install
 
 ### 1. Clone the repository
@@ -52,11 +75,11 @@ SUNO_API_URL=https://api.suno.example/api/v1/generate
 SUNO_API_KEY=your_suno_api_key_here
 SUNO_CALLBACK_URL=
 BACKEND_PUBLIC_URL=https://your-public-url.example
-NGROK_AUTHTOKEN=your_ngrok_authtoken
-NGROK_URL=https://your-ngrok-url.ngrok-free.app
 SUNO_MODEL=V4_5ALL
 SUNO_CUSTOM_MODE=false
 SUNO_INSTRUMENTAL=false
+NGROK_AUTHTOKEN=your_ngrok_authtoken
+NGROK_URL=https://your-ngrok-url.ngrok-free.app
 GOOGLE_OAUTH_CLIENT_ID=your_google_client_id
 GOOGLE_OAUTH_CLIENT_SECRET=your_google_client_secret
 GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback/
@@ -96,11 +119,14 @@ That callback cannot be delivered to `localhost` or `127.0.0.1` from the public 
 
 Install `ngrok` using the method for your platform, then sign in to your ngrok account and copy your auth token.
 
-If you want to keep the token in `.env`, use:
+If you keep your ngrok CLI credentials in `.env`, you can store:
 
 ```env
 NGROK_AUTHTOKEN=your_ngrok_authtoken
+NGROK_URL=https://your-ngrok-url.ngrok-free.app
 ```
+
+These values are for your local workflow. Django does not read them directly to build the callback URL.
 
 Then register it with the CLI once:
 
@@ -146,21 +172,26 @@ https://your-public-url.example/integrations/suno/callback/
 
 as the effective `SUNO_CALLBACK_URL`.
 
-If you want to keep the ngrok values in `.env`, use:
+If you want Django to use your ngrok URL, put the ngrok HTTPS URL into:
 
 ```env
-NGROK_AUTHTOKEN=your_ngrok_authtoken
-NGROK_URL=https://your-ngrok-url.ngrok-free.app
 BACKEND_PUBLIC_URL=https://your-ngrok-url.ngrok-free.app
 ```
 
-or explicitly:
+or set the callback explicitly:
 
 ```env
 SUNO_CALLBACK_URL=https://your-public-url.example/integrations/suno/callback/
 ```
 
 Use explicit `SUNO_CALLBACK_URL` only if you need to override the automatically generated callback URL. In normal local development, setting only `BACKEND_PUBLIC_URL` is simpler.
+
+Important:
+
+- you still run `ngrok` separately from the app
+- `NGROK_AUTHTOKEN` and `NGROK_URL` are useful for your local ngrok workflow
+- the Django app uses `BACKEND_PUBLIC_URL` and `SUNO_CALLBACK_URL` for the callback URL
+- `NGROK_URL` is not consumed automatically by Django, so copy that public URL into `BACKEND_PUBLIC_URL` unless you set `SUNO_CALLBACK_URL` explicitly
 
 #### ngrok: local development checklist
 
@@ -297,7 +328,7 @@ python3 manage.py createsuperuser
 Backend:
 
 ```bash
-./venv/bin/python manage.py runserver
+python3 manage.py runserver
 ```
 
 Frontend:
@@ -335,7 +366,8 @@ python3 manage.py runserver
 
 Behavior in this mode:
 
-- Song generation finishes immediately.
+- Song generation starts in `generating`.
+- The mock provider simulates a short async delay before the song becomes `ready`.
 - No external API key is required.
 - Useful for demo and testing.
 
@@ -376,7 +408,7 @@ Recommended local flow for Suno:
 1. Start Django:
 
 ```bash
-./venv/bin/python manage.py runserver
+python3 manage.py runserver
 ```
 
 2. Start ngrok:
@@ -406,20 +438,6 @@ The project supports Google OAuth login through:
 - `GET /auth/google/callback/`
 
 Frontend starts the flow from the login page and the backend redirects back to the frontend after a successful Google sign-in.
-
-## Domain Model
-
-The current domain model for the system is available as an exported diagram here:
-
-- ![domain_model.jpg](domain_model.jpg)
-
-The diagram covers the main entities and relationships used in the project, including:
-
-- `User` and `Profile`
-- `Library` and `Song`
-- `SongParameters`
-- `ShareLink`
-- enum types such as `SongStatus`, `Gender`, `Occasion`, `Genre`, and `VoiceType`
 
 ## Verify the project
 

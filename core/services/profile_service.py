@@ -1,56 +1,11 @@
-from dataclasses import dataclass
-
 from ..models import Profile, User
-
-
-class ProfileServiceError(Exception):
-    status_code = 400
-
-
-class ProfileUserNotFoundError(ProfileServiceError):
-    status_code = 404
-
-
-class ProfileNotFoundError(ProfileServiceError):
-    status_code = 404
-
-
-class ProfileAlreadyExistsError(ProfileServiceError):
-    status_code = 409
-
-
-class ProfilePayloadValidationError(ProfileServiceError):
-    status_code = 400
-
-
-@dataclass(frozen=True)
-class ProfileCreatePayload:
-    gender: str
-    birthday: str
-
-    @classmethod
-    def from_dict(cls, data):
-        gender = str(data.get('gender', '')).strip()
-        birthday = str(data.get('birthday', '')).strip()
-        if not gender or not birthday:
-            raise ProfilePayloadValidationError('gender and birthday are required')
-        return cls(gender=gender, birthday=birthday)
-
-
-@dataclass(frozen=True)
-class ProfileUpdatePayload:
-    gender: str | None = None
-    birthday: str | None = None
-
-    @classmethod
-    def from_dict(cls, data):
-        payload = cls(
-            gender=str(data['gender']).strip() if 'gender' in data else None,
-            birthday=str(data['birthday']).strip() if 'birthday' in data else None,
-        )
-        if payload.gender == '' or payload.birthday == '':
-            raise ProfilePayloadValidationError('gender and birthday cannot be blank')
-        return payload
+from .profile_already_exists_error import ProfileAlreadyExistsError
+from .profile_create_payload import ProfileCreatePayload
+from .profile_not_found_error import ProfileNotFoundError
+from .profile_payload_validation_error import ProfilePayloadValidationError
+from .profile_service_error import ProfileServiceError
+from .profile_update_payload import ProfileUpdatePayload
+from .profile_user_not_found_error import ProfileUserNotFoundError
 
 
 class ProfileService:

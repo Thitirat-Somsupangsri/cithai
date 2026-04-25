@@ -2,7 +2,7 @@ import json
 
 from django.test import TestCase
 
-from core.models import Library, Song, SongParameters, SongStatus, User
+from core.models import Library, Song, SongStatus, User
 
 
 class SunoCallbackApiTests(TestCase):
@@ -11,16 +11,14 @@ class SunoCallbackApiTests(TestCase):
         self.library = Library.objects.create(user=self.user)
         self.song = Song.objects.create(
             library=self.library,
-            provider='suno',
-            provider_generation_id='task-123',
-            status=SongStatus.GENERATING,
-        )
-        SongParameters.objects.create(
-            song=self.song,
             title='Callback Song',
             occasion='other',
             genre='pop',
             voice_type='boy',
+            custom_text='',
+            provider='suno',
+            provider_generation_id='task-123',
+            status=SongStatus.GENERATING,
         )
 
     def test_complete_callback_marks_song_ready(self):

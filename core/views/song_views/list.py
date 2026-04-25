@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ...models import Library
 from ...presenters import present_song_generation, present_song_summary
 from ...services.generation_timeout_service import GenerationTimeoutService
+from ...services.mock_generation_completion_service import MockGenerationCompletionService
 from ...services import (
     ContentViolationError,
     LibraryFullError,
@@ -22,6 +23,7 @@ from ...services import (
 class SongListView(View):
     creation_service = SongCreationService()
     timeout_service = GenerationTimeoutService()
+    mock_completion_service = MockGenerationCompletionService()
 
     def _get_library(self, user_id):
         try:
@@ -34,7 +36,8 @@ class SongListView(View):
         if err:
             return err
 
-        qs = library.songs.select_related('parameters').all()
+        qs = library.songs.all()
+        self.mock_completion_service.complete_ready_songs(qs)
         self.timeout_service.expire_timed_out_songs(qs)
         songs = [present_song_summary(song) for song in qs]
         return JsonResponse({'songs': songs, 'count': len(songs)})

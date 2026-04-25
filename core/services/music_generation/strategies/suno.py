@@ -10,8 +10,8 @@ class SunoMusicGenerationStrategy(MusicGenerationStrategy):
 
     def generate(self, song):
         command = ProviderGenerationCommand(
-            title=song.parameters.title,
-            prompt=song.parameters.custom_text.strip() or song.parameters.title,
-            genre=song.parameters.genre,
+            title=song.title,
+            prompt=song.custom_text.strip() or song.title,
+            genre=song.genre,
         )
         return self.client.start_generation(command)

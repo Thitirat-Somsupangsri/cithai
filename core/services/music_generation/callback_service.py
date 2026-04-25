@@ -1,16 +1,7 @@
 from ...models import Song, SongStatus
-
-
-class MusicGenerationCallbackError(Exception):
-    status_code = 400
-
-
-class MusicGenerationCallbackValidationError(MusicGenerationCallbackError):
-    status_code = 400
-
-
-class MusicGenerationCallbackSongNotFoundError(MusicGenerationCallbackError):
-    status_code = 404
+from .music_generation_callback_error import MusicGenerationCallbackError
+from .music_generation_callback_song_not_found_error import MusicGenerationCallbackSongNotFoundError
+from .music_generation_callback_validation_error import MusicGenerationCallbackValidationError
 
 
 class SunoCallbackService:

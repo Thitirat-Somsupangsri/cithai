@@ -8,14 +8,16 @@ from django.views.decorators.csrf import csrf_exempt
 from ...models import Song
 from ...presenters import present_song_detail, present_song_generation
 from ...services.generation_timeout_service import GenerationTimeoutService
+from ...services.mock_generation_completion_service import MockGenerationCompletionService
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SongDetailView(View):
     timeout_service = GenerationTimeoutService()
+    mock_completion_service = MockGenerationCompletionService()
     def _get_song(self, user_id, song_id):
         try:
-            song = Song.objects.select_related('parameters').get(
+            song = Song.objects.get(
                 pk=song_id,
                 library__user_id=user_id,
             )
@@ -27,6 +29,7 @@ class SongDetailView(View):
         song, err = self._get_song(user_id, song_id)
         if err:
             return err
+        self.mock_completion_service.complete_if_ready(song)
         self.timeout_service.expire_if_timed_out(song)
         return JsonResponse(present_song_detail(song))
 

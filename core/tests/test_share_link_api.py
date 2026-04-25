@@ -4,16 +4,16 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from core.models import Library, ShareLink, Song, SongParameters, SongStatus, User
+from core.models import Library, ShareLink, Song, SongStatus, User
 
 
 class ShareLinkApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='gina', email='gina@example.com')
         self.library = Library.objects.create(user=self.user)
-        self.song = Song.objects.create(library=self.library, status=SongStatus.READY)
-        SongParameters.objects.create(
-            song=self.song,
+        self.song = Song.objects.create(
+            library=self.library,
+            status=SongStatus.READY,
             title='Ready Song',
             occasion='other',
             genre='pop',

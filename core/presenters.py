@@ -11,7 +11,6 @@ def _present_audio_url(song):
 
 
 def present_song_summary(song):
-    params = getattr(song, 'parameters', None)
     return {
         'id': song.id,
         'title': song.title,
@@ -20,9 +19,9 @@ def present_song_summary(song):
         'duration': song.duration,
         'description': song.description,
         'audio_url': _present_audio_url(song),
-        'occasion': params.occasion if params else None,
-        'genre': params.genre if params else None,
-        'voice_type': params.voice_type if params else None,
+        'occasion': song.occasion,
+        'genre': song.genre,
+        'voice_type': song.voice_type,
         'created_at': song.created_at.isoformat(),
     }
 
@@ -38,10 +37,10 @@ def present_song_detail(song):
         'description': song.description,
         'error_message': song.error_message,
         'audio_url': _present_audio_url(song),
-        'occasion': song.parameters.occasion if hasattr(song, 'parameters') else None,
-        'genre': song.parameters.genre if hasattr(song, 'parameters') else None,
-        'voice_type': song.parameters.voice_type if hasattr(song, 'parameters') else None,
-        'custom_text': song.parameters.custom_text if hasattr(song, 'parameters') else '',
+        'occasion': song.occasion,
+        'genre': song.genre,
+        'voice_type': song.voice_type,
+        'custom_text': song.custom_text,
         'created_at': song.created_at.isoformat(),
         'updated_at': song.updated_at.isoformat(),
     }

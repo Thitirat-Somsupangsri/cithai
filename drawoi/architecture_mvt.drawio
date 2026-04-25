@@ -1,0 +1,55 @@
+<mxfile host="Electron">
+  <diagram id="architecture-mvt-2026-04-25" name="Architecture">
+    <mxGraphModel dx="1164" dy="755" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="10" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Client Layer" vertex="1">
+          <mxGeometry height="220" width="300" x="60" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="10" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="React / Vite Frontend&#xa;- login&#xa;- library&#xa;- song creation&#xa;- playback&#xa;- share view" vertex="1">
+          <mxGeometry height="130" width="260" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;" value="Django View Layer" vertex="1">
+          <mxGeometry height="300" width="320" x="420" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="20" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="User / Profile Views&#xa;Song List / Detail Views&#xa;ShareLink List / Detail Views&#xa;Google Login / Callback Views&#xa;Suno Callback View" vertex="1">
+          <mxGeometry height="210" width="280" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="30" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;" value="Service Layer" vertex="1">
+          <mxGeometry height="360" width="340" x="800" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="31" parent="30" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="UserService&#xa;ProfileService&#xa;SongCreationService&#xa;MusicGenerationService&#xa;MockGenerationCompletionService&#xa;SunoCallbackService&#xa;ShareLinkService&#xa;ContentModerationService&#xa;GenerationTimeoutService" vertex="1">
+          <mxGeometry height="270" width="300" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="40" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;" value="Model Layer" vertex="1">
+          <mxGeometry height="300" width="320" x="420" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="41" parent="40" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="User&#xa;Profile&#xa;Library&#xa;Song&#xa;ShareLink&#xa;Enums: Gender, Occasion, Genre, VoiceType, SongStatus" vertex="1">
+          <mxGeometry height="210" width="280" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="50" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;" value="External Integrations" vertex="1">
+          <mxGeometry height="300" width="340" x="800" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="51" parent="50" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="Suno API&#xa;ngrok / Public Tunnel&#xa;Google OAuth Provider" vertex="1">
+          <mxGeometry height="210" width="300" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" source="10" style="endArrow=block;endFill=1;strokeColor=#6c8ebf;" target="20" value="HTTP / JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="20" style="endArrow=block;endFill=1;strokeColor=#82b366;" target="30" value="delegate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="30" style="endArrow=block;endFill=1;strokeColor=#d6b656;" target="40" value="read / write">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="30" style="endArrow=block;endFill=1;strokeColor=#9673a6;" target="50" value="integrate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" source="50" style="endArrow=block;endFill=1;dashed=1;strokeColor=#9673a6;" target="20" value="callbacks / redirects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

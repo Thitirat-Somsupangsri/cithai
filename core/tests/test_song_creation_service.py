@@ -34,8 +34,8 @@ class SongCreationServiceTests(TestCase):
         )
 
         self.assertEqual(song.library, self.library)
-        self.assertEqual(song.parameters.title, 'Party Mix')
-        self.assertEqual(song.status, 'ready')
+        self.assertEqual(song.title, 'Party Mix')
+        self.assertEqual(song.status, 'generating')
 
     def test_service_raises_when_library_missing(self):
         with self.assertRaises(LibraryNotFoundError):
@@ -51,7 +51,15 @@ class SongCreationServiceTests(TestCase):
 
     def test_service_raises_when_library_is_full(self):
         for index in range(Library.MAX_SONGS):
-            Song.objects.create(library=self.library, provider_generation_id=str(index))
+            Song.objects.create(
+                library=self.library,
+                title=f'Song {index}',
+                occasion='other',
+                genre='rock',
+                voice_type='boy',
+                custom_text='',
+                provider_generation_id=str(index),
+            )
 
         with self.assertRaises(LibraryFullError):
             self.service.create_for_user(

@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MaxValueValidator
-from .enums import SongStatus
+from .enums import Genre, Occasion, SongStatus, VoiceType
 from .library import Library
 
 
@@ -8,9 +8,7 @@ class Song(models.Model):
     """
     An AI-generated musical composition stored in a Library.
 
-    - Song has NO title field of its own.
-      The title comes from SongParameters.title — the user provides it
-      as part of the generation parameters, and SongParameters creates the Song.
+    - Generation parameters are stored directly on Song.
     - duration in seconds; max 600 s (10 minutes).
     - All songs (generating, ready, failed) live in the library.
     - Only 'ready' songs can be played, downloaded, or shared.
@@ -22,6 +20,11 @@ class Song(models.Model):
         on_delete=models.CASCADE,
         related_name='songs'
     )
+    title       = models.CharField(max_length=255)
+    occasion    = models.CharField(max_length=20, choices=Occasion.choices)
+    genre       = models.CharField(max_length=20, choices=Genre.choices)
+    voice_type  = models.CharField(max_length=20, choices=VoiceType.choices)
+    custom_text = models.TextField(blank=True, default='')
     provider    = models.CharField(max_length=20, default='mock')
     provider_generation_id = models.CharField(max_length=255, blank=True, default='')
     status      = models.CharField(
@@ -42,14 +45,6 @@ class Song(models.Model):
 
     class Meta:
         db_table = 'song'
-
-    @property
-    def title(self):
-        """Title is owned by SongParameters, not Song."""
-        try:
-            return self.parameters.title
-        except Exception:
-            return '(no title)'
 
     @property
     def is_accessible(self):

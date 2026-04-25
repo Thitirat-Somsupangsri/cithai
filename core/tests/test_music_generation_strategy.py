@@ -1,7 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 
-from core.models import Library, Song, SongParameters, User
+from core.models import Library, Song, User
 from core.services.music_generation import generate_song, get_music_generation_strategy
 from core.services.music_generation.strategies.mock import (
     MOCK_AUDIO_DURATION_SECONDS,
@@ -16,16 +16,14 @@ class MusicGenerationStrategyTests(TestCase):
         self.library = Library.objects.create(user=self.user)
 
     def _create_song(self):
-        song = Song.objects.create(library=self.library)
-        SongParameters.objects.create(
-            song=song,
+        return Song.objects.create(
+            library=self.library,
             title='Birthday Song',
             occasion='birthday',
             genre='pop',
             voice_type='girl',
             custom_text='make it cheerful',
         )
-        return song
 
     @override_settings(MUSIC_GENERATION_PROVIDER='mock')
     def test_mock_strategy_is_selected(self):
@@ -47,10 +45,10 @@ class MusicGenerationStrategyTests(TestCase):
         song = generate_song(self._create_song())
 
         self.assertEqual(song.provider, 'mock')
-        self.assertEqual(song.status, 'ready')
-        self.assertEqual(song.duration, MOCK_AUDIO_DURATION_SECONDS)
-        self.assertEqual(song.audio_url, MOCK_AUDIO_URL)
-        self.assertTrue(song.provider_generation_id.startswith('mock-song-'))
+        self.assertEqual(song.status, 'generating')
+        self.assertEqual(song.duration, 0)
+        self.assertEqual(song.audio_url, '')
+        self.assertTrue(song.provider_generation_id.startswith('mock-task-'))
         self.assertEqual(song.error_message, '')
 
     @override_settings(
