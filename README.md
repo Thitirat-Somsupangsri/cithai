@@ -411,7 +411,7 @@ Frontend starts the flow from the login page and the backend redirects back to t
 
 The current domain model for the system is available as an exported diagram here:
 
-- [domain_model.jpg](/Users/thitiratss/srs/ex3_srs/domain_model.jpg)
+- [domain_model.jpg](domain_model.jpg)
 
 The diagram covers the main entities and relationships used in the project, including:
 
@@ -431,8 +431,8 @@ python3 manage.py test core
 
 ## Example Run Output / Logs
 
-- Mock generation evidence: [docs/evidence/mock-generation.md](/Users/thitiratss/srs/ex3_srs/docs/evidence/mock-generation.md:1)
-- Suno generation evidence: [docs/evidence/suno-generation.md](/Users/thitiratss/srs/ex3_srs/docs/evidence/suno-generation.md:1)
+- Mock generation evidence: [docs/evidence/mock-generation.md](docs/evidence/mock-generation.md:1)
+- Suno generation evidence: [docs/evidence/suno-generation.md](docs/evidence/suno-generation.md:1)
 
 ## Notes
 
