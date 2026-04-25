@@ -407,6 +407,20 @@ The project supports Google OAuth login through:
 
 Frontend starts the flow from the login page and the backend redirects back to the frontend after a successful Google sign-in.
 
+## Domain Model
+
+The current domain model for the system is available as an exported diagram here:
+
+- [domain_model.jpg](/Users/thitiratss/srs/ex3_srs/domain_model.jpg)
+
+The diagram covers the main entities and relationships used in the project, including:
+
+- `User` and `Profile`
+- `Library` and `Song`
+- `SongParameters`
+- `ShareLink`
+- enum types such as `SongStatus`, `Gender`, `Occasion`, `Genre`, and `VoiceType`
+
 ## Verify the project
 
 Run tests:

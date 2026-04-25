@@ -3,6 +3,10 @@ from django.test import TestCase, override_settings
 
 from core.models import Library, Song, SongParameters, User
 from core.services.music_generation import generate_song, get_music_generation_strategy
+from core.services.music_generation.strategies.mock import (
+    MOCK_AUDIO_DURATION_SECONDS,
+    MOCK_AUDIO_URL,
+)
 from core.services.music_generation.strategies import GenerationResult, SunoMusicGenerationStrategy
 
 
@@ -44,7 +48,8 @@ class MusicGenerationStrategyTests(TestCase):
 
         self.assertEqual(song.provider, 'mock')
         self.assertEqual(song.status, 'ready')
-        self.assertEqual(song.duration, 180)
+        self.assertEqual(song.duration, MOCK_AUDIO_DURATION_SECONDS)
+        self.assertEqual(song.audio_url, MOCK_AUDIO_URL)
         self.assertTrue(song.provider_generation_id.startswith('mock-song-'))
         self.assertEqual(song.error_message, '')
 

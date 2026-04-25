@@ -2,7 +2,11 @@ import json
 
 from django.test import TestCase, override_settings
 
-from core.models import Library, User
+from core.models import Library, Song, SongParameters, SongStatus, User
+from core.services.music_generation.strategies.mock import (
+    MOCK_AUDIO_DURATION_SECONDS,
+    MOCK_AUDIO_URL,
+)
 
 
 class SongApiGenerationTests(TestCase):
@@ -28,5 +32,31 @@ class SongApiGenerationTests(TestCase):
         payload = response.json()
         self.assertEqual(payload['provider'], 'mock')
         self.assertEqual(payload['status'], 'ready')
-        self.assertEqual(payload['duration'], 180)
+        self.assertEqual(payload['duration'], MOCK_AUDIO_DURATION_SECONDS)
         self.assertEqual(payload['error_message'], '')
+        self.assertEqual(payload['audio_url'], MOCK_AUDIO_URL)
+
+    def test_list_songs_backfills_audio_url_for_ready_mock_song(self):
+        library = Library.objects.get(user=self.user)
+        song = Song.objects.create(
+            library=library,
+            provider='mock',
+            status=SongStatus.READY,
+            duration=3,
+            description='Legacy mock song',
+            audio_url='',
+        )
+        SongParameters.objects.create(
+            song=song,
+            title='Legacy Track',
+            occasion='other',
+            genre='pop',
+            voice_type='boy',
+            custom_text='',
+        )
+
+        response = self.client.get(f'/users/{self.user.id}/songs/')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['songs'][0]['audio_url'], MOCK_AUDIO_URL)

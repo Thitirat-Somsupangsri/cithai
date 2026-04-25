@@ -81,7 +81,7 @@ function useAudioPlayback() {
 
   async function playSong(song) {
     const audio = audioRef.current;
-    const audioUrl = song?.audio_url || (song?.provider === "mock" ? "/mock-song.mp3" : null);
+    const audioUrl = song?.audio_url || null;
     if (!audio || !audioUrl) return;
 
     setPlaybackError("");
@@ -514,7 +514,7 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   useGsapFadeUp(ref, [songs.length]);
 
   const playableSongs = useMemo(
-    () => songs.filter((song) => song.status === "ready" && (song.audio_url || song.provider === "mock")),
+    () => songs.filter((song) => song.status === "ready" && song.audio_url),
     [songs]
   );
 
@@ -851,7 +851,7 @@ function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlayi
           {song.duration > 0 && (
             <span className="duration-badge">{formatDuration(song.duration)}</span>
           )}
-          {song.status === "ready" && (song.audio_url || song.provider === "mock") && (
+          {song.status === "ready" && song.audio_url && (
             <button
               type="button"
               className={`player-card-button ${isPlaying ? "is-playing" : ""}`}
@@ -1287,7 +1287,7 @@ function SongDetailPage({ currentUser, onChange }) {
                 </div>
               )}
 
-              {song.status === "ready" && (song.audio_url || song.provider === "mock") && (
+              {song.status === "ready" && song.audio_url && (
                 <div className="detail-section">
                   <p className="detail-section-label">Playback</p>
                   <div className="detail-player">
@@ -1298,7 +1298,7 @@ function SongDetailPage({ currentUser, onChange }) {
                       ref={audioRef}
                       controls
                       preload="none"
-                      src={song.audio_url || "/mock-song.mp3"}
+                      src={song.audio_url}
                       onPlay={() => setActiveSongId(song.id)}
                       onPause={() => {
                         if (!audioRef.current?.ended) {
@@ -1561,7 +1561,7 @@ function ShareViewPage() {
                 {formatDuration(data.duration)}
               </p>
             )}
-            {(data.audio_url || data.provider === "mock") && (
+            {data.audio_url && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <button
                   className={`btn ${activeSongId === data.song_id ? "btn-ghost" : "btn-primary"}`}
@@ -1573,7 +1573,7 @@ function ShareViewPage() {
                   ref={audioRef}
                   controls
                   preload="none"
-                  src={data.audio_url || "/mock-song.mp3"}
+                  src={data.audio_url}
                   onPlay={() => setActiveSongId(data.song_id)}
                   onPause={() => { if (!audioRef.current?.ended) setActiveSongId(null); }}
                 />

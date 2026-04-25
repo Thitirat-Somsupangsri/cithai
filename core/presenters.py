@@ -1,3 +1,15 @@
+from .models import SongStatus
+from .services.music_generation.strategies.mock import MOCK_AUDIO_URL
+
+
+def _present_audio_url(song):
+    if song.audio_url:
+        return song.audio_url
+    if song.provider == 'mock' and song.status == SongStatus.READY:
+        return MOCK_AUDIO_URL
+    return ''
+
+
 def present_song_summary(song):
     params = getattr(song, 'parameters', None)
     return {
@@ -7,7 +19,7 @@ def present_song_summary(song):
         'status': song.status,
         'duration': song.duration,
         'description': song.description,
-        'audio_url': song.audio_url,
+        'audio_url': _present_audio_url(song),
         'occasion': params.occasion if params else None,
         'genre': params.genre if params else None,
         'voice_type': params.voice_type if params else None,
@@ -25,7 +37,7 @@ def present_song_detail(song):
         'duration': song.duration,
         'description': song.description,
         'error_message': song.error_message,
-        'audio_url': song.audio_url,
+        'audio_url': _present_audio_url(song),
         'occasion': song.parameters.occasion if hasattr(song, 'parameters') else None,
         'genre': song.parameters.genre if hasattr(song, 'parameters') else None,
         'voice_type': song.parameters.voice_type if hasattr(song, 'parameters') else None,
@@ -45,6 +57,7 @@ def present_song_generation(song):
         'duration': song.duration,
         'description': song.description,
         'error_message': song.error_message,
+        'audio_url': _present_audio_url(song),
     }
 
 
@@ -89,7 +102,7 @@ def present_share_link_resolution(link):
         'expiration_date': link.expiration_date.isoformat(),
         'title': song.title,
         'description': song.description,
-        'audio_url': song.audio_url,
+        'audio_url': _present_audio_url(song),
         'duration': song.duration,
         'provider': song.provider,
     }
