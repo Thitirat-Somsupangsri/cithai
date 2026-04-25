@@ -3,7 +3,10 @@
 Exercise project implemented with Django backend + React/Vite frontend.
 
 ### This project follow below SRS
-[template](https://docs.google.com/document/d/1bfx91J7NIcw0MIt0IWcn0_58b3pJX2hFT9IRO6uPWfg/edit?usp=sharing)
+[srs](https://docs.google.com/document/d/1bfx91J7NIcw0MIt0IWcn0_58b3pJX2hFT9IRO6uPWfg/edit?usp=sharing)
+
+### Feature Demo
+[Feature Demo](./FEATURE_DEMO.md)
 
 ## Features
 
