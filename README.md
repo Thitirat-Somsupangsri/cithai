@@ -411,7 +411,7 @@ Frontend starts the flow from the login page and the backend redirects back to t
 
 The current domain model for the system is available as an exported diagram here:
 
-- [domain_model.jpg](domain_model.jpg)
+- ![domain_model.jpg](domain_model.jpg)
 
 The diagram covers the main entities and relationships used in the project, including:
 
@@ -429,11 +429,6 @@ Run tests:
 python3 manage.py test core
 ```
 
-## Example Run Output / Logs
-
-- Mock generation evidence: [docs/evidence/mock-generation.md](docs/evidence/mock-generation.md:1)
-- Suno generation evidence: [docs/evidence/suno-generation.md](docs/evidence/suno-generation.md:1)
-
 ## Notes
 
 - Mock mode is the easiest way to verify the project end-to-end.
@@ -442,8 +437,6 @@ python3 manage.py test core
 - The current app stores one local `Song` per Suno task. When Suno returns multiple generated tracks in the callback, the app currently uses the first returned track as the representative result for that local song.
 
 ## CRUD Evidence
-
-[demo video](https://youtu.be/2D5Z9Am61D8)
 
 Users:
 ![django admin](pic/users.png)
