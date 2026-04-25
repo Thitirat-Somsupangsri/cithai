@@ -46,8 +46,8 @@ The project includes Django admin support for core entities, Google OAuth login 
 
 ## System Diagrams
 - domain model: ![domain_model.jpg](pic/domain_model.jpg)
-- sequence diagram: ![domain_model.jpg](pic/seqeunce_diagram.png)
-- class diagram: ![domain_model.jpg](pic/class_diagram.jpg)
+- sequence diagram: ![sequence.jpg](sequence_diagram.jpg)
+- class diagram: ![class.jpg](pic/class_diagram.jpg)
 
 ## How to install
 
