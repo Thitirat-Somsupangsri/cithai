@@ -8,3 +8,4 @@ class GenerationResult:
     description: str = ''
     provider_generation_id: str = ''
     error_message: str = ''
+    callback_url: str = ''

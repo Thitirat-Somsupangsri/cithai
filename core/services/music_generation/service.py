@@ -18,6 +18,7 @@ def generate_song(song):
         song.description = result.description
         song.provider_generation_id = result.provider_generation_id
         song.error_message = result.error_message
+        song.callback_url = result.callback_url
     except SongGenerationError as exc:
         song.status = 'failed'
         song.error_message = str(exc)

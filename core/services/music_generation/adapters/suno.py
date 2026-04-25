@@ -58,4 +58,5 @@ class SunoApiAdapter(MusicProviderClient):
             description=f'Suno generation started for "{command.title}"',
             provider_generation_id=task_id,
             error_message='',
+            callback_url=config.callback_url,
         )

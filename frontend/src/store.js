@@ -87,3 +87,60 @@ export async function createSong(userId, payload) {
 export async function deleteSong(userId, songId) {
   return request(`/users/${userId}/songs/${songId}/`, { method: "DELETE" });
 }
+
+export async function getProfile(userId) {
+  return request(`/users/${userId}/profile/`);
+}
+
+export async function createProfile(userId, payload) {
+  return request(`/users/${userId}/profile/`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateProfile(userId, payload) {
+  return request(`/users/${userId}/profile/`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listShareLinks(userId, songId) {
+  const payload = await request(`/users/${userId}/songs/${songId}/share-links/`);
+  return payload.share_links || [];
+}
+
+export async function createShareLink(userId, songId, expiration_date) {
+  return request(`/users/${userId}/songs/${songId}/share-links/`, {
+    method: "POST",
+    body: JSON.stringify({ expiration_date }),
+  });
+}
+
+export async function deleteShareLink(token) {
+  return request(`/share-links/${token}/`, { method: "DELETE" });
+}
+
+export async function resolveShareLink(token) {
+  return request(`/share-links/${token}/`);
+}
+
+export async function downloadSong(song) {
+  const url = song.audio_url;
+  if (!url) return;
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `${song.title || "song"}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(url, "_blank", "noopener");
+  }
+}

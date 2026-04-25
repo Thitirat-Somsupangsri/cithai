@@ -82,7 +82,39 @@ If you want to run in `suno` mode:
 
 For local development, `localhost` is usually not reachable by Suno directly. You will usually need a public tunnel such as `ngrok` or another reverse-tunnel service.
 
-Install `ngrok` first if you want to test Suno mode against your local Django server.
+#### ngrok: why it is needed
+
+When `MUSIC_GENERATION_PROVIDER=suno`, the Suno provider must call back into your Django app at:
+
+```text
+/integrations/suno/callback/
+```
+
+That callback cannot be delivered to `localhost` or `127.0.0.1` from the public internet. `ngrok` gives your local Django server a temporary public HTTPS URL that forwards requests to port `8000` on your machine.
+
+#### ngrok: install and connect your account
+
+Install `ngrok` using the method for your platform, then sign in to your ngrok account and copy your auth token.
+
+If you want to keep the token in `.env`, use:
+
+```env
+NGROK_AUTHTOKEN=your_ngrok_authtoken
+```
+
+Then register it with the CLI once:
+
+```bash
+ngrok config add-authtoken <your_ngrok_authtoken>
+```
+
+You can confirm the CLI is working with:
+
+```bash
+ngrok version
+```
+
+#### ngrok: start the tunnel
 
 If `ngrok` is already installed:
 
@@ -90,11 +122,29 @@ If `ngrok` is already installed:
 ngrok http 8000
 ```
 
+`ngrok` will print forwarding URLs similar to:
+
+```text
+Forwarding  https://abc123.ngrok-free.app -> http://localhost:8000
+```
+
+Use the `https://...ngrok-free.app` URL, not the `http://` one.
+
+#### ngrok: wire the public URL into Django
+
 Then copy the public HTTPS URL and set:
 
 ```env
 BACKEND_PUBLIC_URL=https://your-public-url.example
 ```
+
+With that value, Django automatically builds:
+
+```text
+https://your-public-url.example/integrations/suno/callback/
+```
+
+as the effective `SUNO_CALLBACK_URL`.
 
 If you want to keep the ngrok values in `.env`, use:
 
@@ -110,11 +160,25 @@ or explicitly:
 SUNO_CALLBACK_URL=https://your-public-url.example/integrations/suno/callback/
 ```
 
+Use explicit `SUNO_CALLBACK_URL` only if you need to override the automatically generated callback URL. In normal local development, setting only `BACKEND_PUBLIC_URL` is simpler.
+
+#### ngrok: local development checklist
+
+1. Start Django on port `8000`
+2. Run `ngrok http 8000`
+3. Copy the public `https://...` URL
+4. Put that URL into `BACKEND_PUBLIC_URL`
+5. Restart Django so the new env values are loaded
+6. Trigger song generation
+
+If you restart `ngrok`, the public URL usually changes unless you are using a reserved domain. When that happens, update `.env` and restart Django again.
+
 Important:
 
 - `SUNO_CALLBACK_URL` must be public and must end with `/integrations/suno/callback/`
 - `localhost`, `127.0.0.1`, and placeholder example URLs will fail
 - restart Django after changing `.env`
+- if Suno never updates a song out of `generating`, first verify that `BACKEND_PUBLIC_URL` still matches the current ngrok URL
 
 ### 7. Set up Google OAuth
 
@@ -126,6 +190,25 @@ GOOGLE_OAUTH_CLIENT_SECRET=your_google_client_secret
 GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback/
 FRONTEND_APP_URL=http://127.0.0.1:5173
 ```
+#### Google OAuth: create credentials in Google Cloud Console
+
+1. Open Google Cloud Console
+2. Select or create a project
+3. Go to `APIs & Services` -> `OAuth consent screen`
+4. Configure the consent screen for testing or internal use
+5. Add the scopes you need for this app:
+
+```text
+openid
+email
+profile
+```
+
+6. Go to `APIs & Services` -> `Credentials`
+7. Create an `OAuth client ID`
+8. Choose `Web application`
+9. Add the frontend and backend URLs shown below
+10. Copy the generated client ID and client secret into `.env`
 
 Google Cloud Console values:
 
@@ -141,7 +224,53 @@ http://127.0.0.1:5173
 http://127.0.0.1:8000/auth/google/callback/
 ```
 
-If you use a public backend domain for OAuth testing, add that redirect URI too.
+If you prefer `localhost` instead of `127.0.0.1`, keep it consistent. Mixing `localhost` and `127.0.0.1` across frontend, backend, and Google Console is a common source of OAuth redirect mismatches.
+
+#### Google OAuth: recommended local `.env`
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=your_google_client_id
+GOOGLE_OAUTH_CLIENT_SECRET=your_google_client_secret
+GOOGLE_OAUTH_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback/
+FRONTEND_APP_URL=http://127.0.0.1:5173
+GOOGLE_OAUTH_AUTH_URI=https://accounts.google.com/o/oauth2/v2/auth
+GOOGLE_OAUTH_TOKEN_URI=https://oauth2.googleapis.com/token
+GOOGLE_OAUTH_USERINFO_URI=https://openidconnect.googleapis.com/v1/userinfo
+GOOGLE_OAUTH_SCOPES=openid email profile
+```
+
+#### Google OAuth: local run sequence
+
+1. Start Django on `http://127.0.0.1:8000`
+2. Start the frontend on `http://127.0.0.1:5173`
+3. Open the frontend in the browser
+4. Click the Google sign-in button
+5. Complete the Google consent flow
+6. Verify that the app returns you to the frontend and shows the logged-in user
+
+#### Google OAuth: using a public backend URL
+
+If you expose Django through a public domain or tunnel for OAuth testing, add that exact callback URL to Google Cloud Console too, for example:
+
+```text
+https://your-public-url.example/auth/google/callback/
+```
+
+and update:
+
+```env
+GOOGLE_OAUTH_REDIRECT_URI=https://your-public-url.example/auth/google/callback/
+```
+
+`FRONTEND_APP_URL` should still point to wherever your frontend is actually running.
+
+#### Google OAuth: common failure cases
+
+- `redirect_uri_mismatch`: the URL in Google Cloud Console does not exactly match `GOOGLE_OAUTH_REDIRECT_URI`
+- `Google OAuth is not configured.`: one or more required env vars are missing, usually `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, or `GOOGLE_OAUTH_REDIRECT_URI`
+- login succeeds at Google but does not return to the app: check that Django is running on the same host/port used in `GOOGLE_OAUTH_REDIRECT_URI`
+- frontend returns to the wrong address: check `FRONTEND_APP_URL`
+- local Safari or host-switching issues: keep using either `127.0.0.1` everywhere or `localhost` everywhere for the same test run
 
 ### 8. Apply migrations
 

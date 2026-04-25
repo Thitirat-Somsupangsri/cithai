@@ -10,14 +10,22 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { genres, occasions, voiceTypes } from "./options";
+import { genders, genres, occasions, voiceTypes } from "./options";
 import {
   createSong,
   createUser,
   deleteSong,
+  downloadSong,
   getSongById,
   getCurrentUser,
+  getProfile,
+  createProfile,
+  updateProfile,
   listSongsForUser,
+  listShareLinks,
+  createShareLink,
+  deleteShareLink,
+  resolveShareLink,
   loginUser,
   logoutUser,
   setSessionUserId,
@@ -72,7 +80,8 @@ function useAudioPlayback() {
 
   async function toggleSong(song) {
     const audio = audioRef.current;
-    if (!audio || !song?.audio_url) return;
+    const audioUrl = song?.audio_url || (song?.provider === "mock" ? "/mock-song.mp3" : null);
+    if (!audio || !audioUrl) return;
 
     setPlaybackError("");
 
@@ -82,8 +91,8 @@ function useAudioPlayback() {
       return;
     }
 
-    if (audio.src !== song.audio_url) {
-      audio.src = song.audio_url;
+    if (audio.src !== audioUrl) {
+      audio.src = audioUrl;
       audio.load();
     }
 
@@ -178,7 +187,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={currentUser ? "/library" : "/login"} replace />} />
       <Route path="/login" element={<LoginPage currentUser={currentUser} onChange={refresh} startupError={startupError} />} />
       <Route path="/create-user" element={<CreateUserPage currentUser={currentUser} onChange={refresh} startupError={startupError} />} />
-      <Route path="/auth/google/callback" element={<GoogleCallbackPage onChange={refresh} />} />
+      <Route path="/oauth/callback" element={<GoogleCallbackPage onChange={refresh} />} />
       <Route path="/library" element={
         <ProtectedRoute currentUser={currentUser}>
           <LibraryPage currentUser={currentUser} songs={songs} onLogout={refresh} onSongsChange={refresh} />
@@ -194,6 +203,12 @@ function AppRoutes() {
           <SongDetailPage currentUser={currentUser} onChange={refresh} />
         </ProtectedRoute>
       } />
+      <Route path="/profile" element={
+        <ProtectedRoute currentUser={currentUser}>
+          <ProfilePage currentUser={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/s/:token" element={<ShareViewPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -234,9 +249,12 @@ function Shell({ currentUser, onLogout, children }) {
               <p className="eyebrow">Profile</p>
               <strong>{currentUser.username}</strong>
               <span>{currentUser.email}</span>
+              <Link className="btn btn-ghost btn-sm" to="/profile" style={{ marginTop: 10, display: "block", textAlign: "center" }}>
+                Edit Profile
+              </Link>
               <button
                 className="btn btn-ghost btn-sm"
-                style={{ marginTop: 10 }}
+                style={{ marginTop: 6 }}
                 onClick={handleLogout}
               >
                 Sign out
@@ -664,7 +682,7 @@ function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlayi
           {song.duration > 0 && (
             <span className="duration-badge">{formatDuration(song.duration)}</span>
           )}
-          {song.status === "ready" && song.audio_url && (
+          {song.status === "ready" && (song.audio_url || song.provider === "mock") && (
             <button
               className={`btn btn-sm ${isPlaying ? "btn-ghost" : "btn-primary"}`}
               onClick={onPlayToggle}
@@ -838,6 +856,11 @@ function SongDetailPage({ currentUser, onChange }) {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [shareLinks, setShareLinks] = useState([]);
+  const [newLinkDate, setNewLinkDate] = useState("");
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [showShareForm, setShowShareForm] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const navigate = useNavigate();
   const ref = useRef(null);
   const {
@@ -914,6 +937,49 @@ function SongDetailPage({ currentUser, onChange }) {
     if (!song) return;
     setPlaybackError("");
     await toggleSong(song);
+  }
+
+  async function handleDownload() {
+    if (!song) return;
+    setDownloading(true);
+    try { await downloadSong(song); } finally { setDownloading(false); }
+  }
+
+  function loadShareLinks() {
+    listShareLinks(currentUser.id, songId).then(setShareLinks).catch(() => {});
+  }
+
+  useEffect(() => {
+    if (song?.status === "ready") loadShareLinks();
+  }, [song?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleCreateLink(e) {
+    e.preventDefault();
+    setCreatingLink(true);
+    try {
+      const link = await createShareLink(currentUser.id, songId, newLinkDate);
+      setShareLinks((prev) => [...prev, link]);
+      setNewLinkDate("");
+      setShowShareForm(false);
+    } catch (err) {
+      alert(err.message || "Could not create share link.");
+    } finally {
+      setCreatingLink(false);
+    }
+  }
+
+  async function handleDeleteLink(token) {
+    if (!confirm("Delete this share link?")) return;
+    try {
+      await deleteShareLink(token);
+      setShareLinks((prev) => prev.filter((l) => l.token !== token));
+    } catch {
+      alert("Could not delete share link.");
+    }
+  }
+
+  function shareUrl(token) {
+    return `${window.location.origin}/s/${token}`;
   }
 
   const date = song
@@ -1016,7 +1082,7 @@ function SongDetailPage({ currentUser, onChange }) {
                 </div>
               )}
 
-              {song.status === "ready" && song.audio_url && (
+              {song.status === "ready" && (song.audio_url || song.provider === "mock") && (
                 <div className="detail-section">
                   <p className="detail-section-label">Playback</p>
                   <div className="detail-player">
@@ -1027,7 +1093,7 @@ function SongDetailPage({ currentUser, onChange }) {
                       ref={audioRef}
                       controls
                       preload="none"
-                      src={song.audio_url}
+                      src={song.audio_url || "/mock-song.mp3"}
                       onPlay={() => setActiveSongId(song.id)}
                       onPause={() => {
                         if (!audioRef.current?.ended) {
@@ -1036,6 +1102,68 @@ function SongDetailPage({ currentUser, onChange }) {
                       }}
                     />
                   </div>
+                </div>
+              )}
+
+              {song.status === "ready" && song.audio_url && (
+                <div className="detail-section">
+                  <p className="detail-section-label">Download</p>
+                  <button className="btn btn-ghost" onClick={handleDownload} disabled={downloading}>
+                    {downloading ? "Downloading…" : "Download MP3"}
+                  </button>
+                </div>
+              )}
+
+              {song.status === "ready" && (
+                <div className="detail-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <p className="detail-section-label" style={{ marginBottom: 0 }}>Share Links</p>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setShowShareForm((v) => !v)}>
+                      {showShareForm ? "Cancel" : "+ New Link"}
+                    </button>
+                  </div>
+
+                  {showShareForm && (
+                    <form onSubmit={handleCreateLink} style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                      <input
+                        type="date"
+                        value={newLinkDate}
+                        onChange={(e) => setNewLinkDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        required
+                        style={{ flex: 1, borderRadius: "var(--radius-sm)", border: "1px solid var(--line)", padding: "6px 10px" }}
+                      />
+                      <button className="btn btn-primary btn-sm" type="submit" disabled={creatingLink}>
+                        {creatingLink ? "Creating…" : "Create"}
+                      </button>
+                    </form>
+                  )}
+
+                  {shareLinks.length === 0 ? (
+                    <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>No share links yet.</p>
+                  ) : (
+                    <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                      {shareLinks.map((link) => (
+                        <li key={link.token} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-soft)", borderRadius: "var(--radius-sm)", padding: "8px 12px" }}>
+                          <span style={{ flex: 1, fontSize: "0.8rem", color: "var(--text-2)", wordBreak: "break-all" }}>
+                            {shareUrl(link.token)}
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: link.is_valid ? "var(--success)" : "var(--danger)", whiteSpace: "nowrap" }}>
+                            {link.is_valid ? `Expires ${link.expiration_date}` : "Expired"}
+                          </span>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => { navigator.clipboard.writeText(shareUrl(link.token)); }}
+                          >
+                            Copy
+                          </button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDeleteLink(link.token)}>
+                            Delete
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
 
@@ -1067,6 +1195,192 @@ function SongDetailPage({ currentUser, onChange }) {
         </div>
       </main>
     </Shell>
+  );
+}
+
+/* ─── Profile Page ──────────────────────────────────────────── */
+function ProfilePage({ currentUser }) {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ gender: "", birthday: "" });
+  const [error, setError] = useState("");
+  const ref = useRef(null);
+  useGsapFadeUp(ref, [loading]);
+
+  useEffect(() => {
+    setLoading(true);
+    getProfile(currentUser.id)
+      .then((p) => { setProfile(p); setForm({ gender: p.gender, birthday: p.birthday }); })
+      .catch(() => setProfile(null))
+      .finally(() => setLoading(false));
+  }, [currentUser.id]);
+
+  function set(key) {
+    return (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      let saved;
+      if (profile) {
+        saved = await updateProfile(currentUser.id, form);
+      } else {
+        saved = await createProfile(currentUser.id, form);
+      }
+      setProfile(saved);
+      setForm({ gender: saved.gender, birthday: saved.birthday });
+      setEditing(false);
+    } catch (err) {
+      setError(err.message || "Could not save profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Shell currentUser={currentUser}>
+      <main className="form-layout" ref={ref}>
+        <div className="form-card fade-up">
+          <div className="form-card-head">
+            <div>
+              <p className="eyebrow">Account</p>
+              <h2>Your Profile</h2>
+            </div>
+            <Link className="btn btn-ghost btn-sm" to="/library">Back</Link>
+          </div>
+
+          {loading ? (
+            <p style={{ color: "var(--muted)" }}>Loading…</p>
+          ) : !profile || editing ? (
+            <form className="song-form" onSubmit={handleSave}>
+              <label className="full-span">
+                <span>Username</span>
+                <input value={currentUser.username} disabled style={{ opacity: 0.5 }} />
+              </label>
+              <label className="full-span">
+                <span>Email</span>
+                <input value={currentUser.email} disabled style={{ opacity: 0.5 }} />
+              </label>
+              <label>
+                <span>Gender</span>
+                <select value={form.gender} onChange={set("gender")} required>
+                  <option value="">Select gender</option>
+                  {genders.map((g) => (
+                    <option key={g.value} value={g.value}>{g.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Birthday</span>
+                <input type="date" value={form.birthday} onChange={set("birthday")} required />
+              </label>
+              {error && <div className="inline-error full-span">{error}</div>}
+              <div className="full-span" style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" type="submit" disabled={saving}>
+                  {saving ? "Saving…" : profile ? "Save Changes" : "Create Profile"}
+                </button>
+                {profile && (
+                  <button className="btn btn-ghost" type="button" onClick={() => { setEditing(false); setError(""); }}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          ) : (
+            <div className="detail-grid">
+              <div className="detail-cell">
+                <p className="detail-cell-label">Username</p>
+                <p className="detail-cell-value">{currentUser.username}</p>
+              </div>
+              <div className="detail-cell">
+                <p className="detail-cell-label">Email</p>
+                <p className="detail-cell-value">{currentUser.email}</p>
+              </div>
+              <div className="detail-cell">
+                <p className="detail-cell-label">Gender</p>
+                <p className="detail-cell-value">{formatLabel(profile.gender)}</p>
+              </div>
+              <div className="detail-cell">
+                <p className="detail-cell-label">Birthday</p>
+                <p className="detail-cell-value">{profile.birthday}</p>
+              </div>
+              <div className="full-span" style={{ marginTop: 8 }}>
+                <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit Profile</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </Shell>
+  );
+}
+
+/* ─── Share View Page (public) ──────────────────────────────── */
+function ShareViewPage() {
+  const { token } = useParams();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const { audioRef, activeSongId, setActiveSongId, toggleSong } = useAudioPlayback();
+  const ref = useRef(null);
+  useGsapFadeUp(ref, [loading]);
+
+  useEffect(() => {
+    resolveShareLink(token)
+      .then(setData)
+      .catch((err) => setError(err.message || "Link not found or expired."))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const mockSong = data ? { id: data.song_id, audio_url: data.audio_url, provider: data.provider } : null;
+
+  return (
+    <div className="auth-layout" ref={ref}>
+      <div className="auth-card fade-up" style={{ maxWidth: 500 }}>
+        <p className="eyebrow">Shared Song</p>
+        {loading ? (
+          <p style={{ color: "var(--muted)" }}>Loading…</p>
+        ) : error ? (
+          <p style={{ color: "var(--danger)" }}>{error}</p>
+        ) : (
+          <>
+            <h2 style={{ marginBottom: 4 }}>{data.title}</h2>
+            {data.description && <p style={{ color: "var(--muted)", marginBottom: 12 }}>{data.description}</p>}
+            {data.duration > 0 && (
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: 12 }}>
+                {formatDuration(data.duration)}
+              </p>
+            )}
+            {(data.audio_url || data.provider === "mock") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button
+                  className={`btn ${activeSongId === data.song_id ? "btn-ghost" : "btn-primary"}`}
+                  onClick={() => toggleSong(mockSong)}
+                >
+                  {activeSongId === data.song_id ? "Pause" : "Play Song"}
+                </button>
+                <audio
+                  ref={audioRef}
+                  controls
+                  preload="none"
+                  src={data.audio_url || "/mock-song.mp3"}
+                  onPlay={() => setActiveSongId(data.song_id)}
+                  onPause={() => { if (!audioRef.current?.ended) setActiveSongId(null); }}
+                />
+              </div>
+            )}
+            <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: 16 }}>
+              Link expires: {data.expiration_date}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

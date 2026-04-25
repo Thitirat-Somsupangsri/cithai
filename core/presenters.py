@@ -81,8 +81,14 @@ def present_share_link(link, include_validity=False):
 
 
 def present_share_link_resolution(link):
+    song = link.song
     return {
         'song_id': link.song_id,
         'token': str(link.token),
         'expiration_date': link.expiration_date.isoformat(),
+        'title': song.title,
+        'description': song.description,
+        'audio_url': song.audio_url,
+        'duration': song.duration,
+        'provider': song.provider,
     }

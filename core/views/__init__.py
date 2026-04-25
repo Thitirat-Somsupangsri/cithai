@@ -3,8 +3,9 @@ from .profile_views import ProfileView
 from .song_views import SongListView, SongDetailView
 from .share_link_views import ShareLinkListView, ShareLinkDetailView
 from .music_generation_callback_views import SunoCallbackView
-from .google_auth_views import GoogleLoginView, GoogleCallbackView
- 
+from .google_login_view import GoogleLoginView
+from .google_callback_view import GoogleCallbackView
+
 __all__ = [
     'UserListView', 'UserDetailView',
     'ProfileView',
@@ -13,4 +14,4 @@ __all__ = [
     'GoogleLoginView', 'GoogleCallbackView',
     'SunoCallbackView',
 ]
- 
+
