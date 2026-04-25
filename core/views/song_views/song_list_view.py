@@ -9,6 +9,7 @@ from ...models import Library
 from ...presenters import present_song_generation, present_song_summary
 from ...services.generation_timeout_service import GenerationTimeoutService
 from ...services.mock_generation_completion_service import MockGenerationCompletionService
+from .._session_auth import require_owned_user
 from ...services import (
     ContentViolationError,
     LibraryFullError,
@@ -32,6 +33,9 @@ class SongListView(View):
             return None, JsonResponse({'error': 'Library not found for this user'}, status=404)
 
     def get(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         library, err = self._get_library(user_id)
         if err:
             return err
@@ -43,6 +47,9 @@ class SongListView(View):
         return JsonResponse({'songs': songs, 'count': len(songs)})
 
     def post(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:

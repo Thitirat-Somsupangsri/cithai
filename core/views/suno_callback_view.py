@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from ..services.music_generation.callback_service import (
+from ..services.music_generation.suno_callback_service import (
     MusicGenerationCallbackSongNotFoundError,
     MusicGenerationCallbackValidationError,
     SunoCallbackService,

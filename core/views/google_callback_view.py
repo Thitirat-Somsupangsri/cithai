@@ -16,6 +16,7 @@ from ._google_oauth_helpers import (
     _resolve_google_redirect_uri,
 )
 from ..models import Library, User
+from ._session_auth import login_session_user
 
 
 class GoogleCallbackView(View):
@@ -41,6 +42,7 @@ class GoogleCallbackView(View):
         except Exception as exc:
             return HttpResponseRedirect(_build_frontend_redirect(request, "/login", oauth_error=str(exc)))
 
+        login_session_user(request, user)
         return HttpResponseRedirect(_build_frontend_redirect(request, "/oauth/callback", user_id=user.id))
 
     def _is_valid_state(self, signed_state, expected_nonce):

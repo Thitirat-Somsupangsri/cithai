@@ -6,6 +6,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from ...presenters import present_user
+from .._session_auth import require_authenticated_user
 from ...services import (
     DuplicateEmailError,
     DuplicateUsernameError,
@@ -20,7 +21,10 @@ class UserListView(View):
     user_service = UserService()
 
     def get(self, request):
-        users = [present_user(user) for user in self.user_service.list_users()]
+        user, err = require_authenticated_user(request)
+        if err:
+            return err
+        users = [present_user(user)]
         return JsonResponse({'users': users})
 
     def post(self, request):

@@ -3,7 +3,7 @@ from django.test import TestCase, override_settings
 
 from core.models import Library, Song, User
 from core.services.music_generation import generate_song, get_music_generation_strategy
-from core.services.music_generation.strategies.mock import (
+from core.services.music_generation.strategies.mock_music_generation_strategy import (
     MOCK_AUDIO_DURATION_SECONDS,
     MOCK_AUDIO_URL,
 )

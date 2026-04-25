@@ -40,6 +40,7 @@ class Song(models.Model):
     error_message = models.TextField(blank=True, default='')
     audio_url   = models.URLField(max_length=2048, blank=True, default='')
     callback_url = models.URLField(max_length=2048, blank=True, default='')
+    retry_count = models.PositiveSmallIntegerField(default=0)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 

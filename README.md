@@ -2,28 +2,49 @@
 
 Exercise project implemented with Django backend + React/Vite frontend.
 
-## Project Status
-
-Status: `Complete`
+### This project follow below SRS
+[template](https://docs.google.com/document/d/1bfx91J7NIcw0MIt0IWcn0_58b3pJX2hFT9IRO6uPWfg/edit?usp=sharing)
 
 ## Features
 
-- User creation and user detail management
-- Profile creation and update with gender and birthday
-- Personal library with a maximum of 20 songs per user
-- Song generation with two providers:
-  `mock` for local simulation
-  `suno` for external asynchronous generation
-- Song lifecycle states: `generating`, `ready`, `failed`
-- Library playback for ready songs with play, pause, previous, next, and seek controls
-- Mock playback asset for local end-to-end testing
-- Suno callback handling through `/integrations/suno/callback/`
-- Share link creation, resolution, expiration, and deactivation
-- Google OAuth login support
-- Django admin support for core entities
+Feature Status: `Complete`
+
+### User Authentication and Account Access (Complete)
+
+The system allows users to create an account and sign in using either email-based identity lookup or Google OAuth. Users can also sign out of the current session and return to the login screen.
+
+### User Profile Management (Complete)
+
+Users can create, view, and update a personal profile containing gender and birthday information. Profile data is stored in the backend and can be edited later.
+
+### Song Creation and Preference Setup (Complete)
+
+Users can create a new song by entering a title and selecting song preferences, including occasion, genre, voice type, and optional custom text or story. These song parameters are stored directly on each `Song`.
+
+### Prompt Safety and Content Moderation (Complete)
+
+Before song generation starts, the system checks the submitted title and custom text for blocked or inappropriate words. If unsafe content is detected, the request is rejected and the flagged words are returned to the frontend.
+
+### AI Song Generation and Progress Tracking (Complete)
+
+The system supports two generation providers: `mock` for local simulation and `suno` for external asynchronous generation. Both providers follow the same high-level lifecycle: a song starts in `generating`, then moves to `ready` or `failed` when processing completes.
+
+### Personal Song Library and Playback (Complete)
+
+Each user has a personal song library with a maximum capacity of 20 songs. Ready songs can be played from the library with playback controls including play, pause, previous, next, and seek.
+
+### Song Download and Sharing (Complete)
+
+Users can download generated songs from the song detail view and create shareable links for ready songs. Share links support expiration, lookup by token, and deactivation through deletion.
+
+### Admin and Integration Support (Complete)
+
+The project includes Django admin support for core entities, Google OAuth login endpoints, mock audio playback for local end-to-end testing, and Suno callback handling through `/integrations/suno/callback/`.
 
 ## System Diagrams
-- domain model: ![domain_model.jpg](domain_model.jpg)
+- domain model: ![domain_model.jpg](pic/domain_model.jpg)
+- sequence diagram: ![domain_model.jpg](pic/seqeunce_diagram.jpg)
+- class diagram: ![domain_model.jpg](pic/class_diagram.jpg)
 
 ## How to install
 

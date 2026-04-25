@@ -5,7 +5,8 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from core.models import Library, Song, SongStatus, User
-from core.services.music_generation.strategies.mock import (
+from core.views._session_auth import SESSION_USER_ID_KEY
+from core.services.music_generation.strategies.mock_music_generation_strategy import (
     MOCK_AUDIO_DURATION_SECONDS,
     MOCK_AUDIO_URL,
 )
@@ -15,6 +16,9 @@ class SongApiGenerationTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='bob', email='bob@example.com')
         Library.objects.create(user=self.user)
+        session = self.client.session
+        session[SESSION_USER_ID_KEY] = self.user.id
+        session.save()
 
     @override_settings(MUSIC_GENERATION_PROVIDER='mock')
     def test_post_song_generates_song_via_strategy(self):
@@ -84,3 +88,33 @@ class SongApiGenerationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload['songs'][0]['audio_url'], MOCK_AUDIO_URL)
+
+    @override_settings(MUSIC_GENERATION_PROVIDER='mock')
+    def test_put_song_can_cancel_generating_song(self):
+        response = self.client.post(
+            f'/users/{self.user.id}/songs/',
+            data=json.dumps({
+                'title': 'Road Trip',
+                'occasion': 'other',
+                'genre': 'rock',
+                'voice_type': 'boy',
+                'custom_text': 'anthemic chorus',
+            }),
+            content_type='application/json',
+        )
+
+        song_id = response.json()['id']
+        cancel_response = self.client.put(
+            f'/users/{self.user.id}/songs/{song_id}/',
+            data=json.dumps({'action': 'cancel'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(cancel_response.status_code, 200)
+        self.assertEqual(cancel_response.json()['status'], SongStatus.CANCELLED)
+
+    def test_song_endpoints_require_authentication(self):
+        self.client.cookies.clear()
+        response = self.client.get(f'/users/{self.user.id}/songs/')
+
+        self.assertEqual(response.status_code, 401)

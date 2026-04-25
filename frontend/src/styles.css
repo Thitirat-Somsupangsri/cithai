@@ -170,6 +170,7 @@ h3 { font-size: 1.05rem; }
   transform: translateY(8px);
   pointer-events: none;
   transition: opacity var(--transition), transform var(--transition);
+  z-index: 200;
 }
 
 .profile-popover strong { font-size: 0.95rem; color: var(--text); }

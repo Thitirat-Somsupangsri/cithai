@@ -3,12 +3,16 @@ import json
 from django.test import TestCase
 
 from core.models import Library, User
+from core.views._session_auth import SESSION_USER_ID_KEY
 
 
 class ProfileApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='frank', email='frank@example.com')
         Library.objects.create(user=self.user)
+        session = self.client.session
+        session[SESSION_USER_ID_KEY] = self.user.id
+        session.save()
 
     def test_post_profile_creates_profile(self):
         response = self.client.post(
@@ -35,3 +39,11 @@ class ProfileApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['error'], 'gender and birthday cannot be blank')
+
+    def test_get_profile_requires_owned_session(self):
+        other = User.objects.create(username='other', email='other@example.com')
+        Library.objects.create(user=other)
+
+        response = self.client.get(f'/users/{other.id}/profile/')
+
+        self.assertEqual(response.status_code, 403)

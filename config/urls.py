@@ -21,16 +21,22 @@ from core.views import (
     ProfileView,
     SongListView, SongDetailView,
     ShareLinkListView, ShareLinkDetailView,
+    AuthSessionLoginView, AuthSessionLogoutView, AuthSessionMeView,
+    ChangePasswordView,
     GoogleLoginView, GoogleCallbackView,
     SunoCallbackView,
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls), 
+    path('auth/session/login/', AuthSessionLoginView.as_view(), name='session-login'),
+    path('auth/session/logout/', AuthSessionLogoutView.as_view(), name='session-logout'),
+    path('auth/session/me/', AuthSessionMeView.as_view(), name='session-me'),
     path('auth/google/login/', GoogleLoginView.as_view(), name='google-login'),
     path('auth/google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:user_id>/', UserDetailView.as_view(), name='user-detail'),
+    path('users/<int:user_id>/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('users/<int:user_id>/profile/', ProfileView.as_view(), name='user-profile'),
     path('users/<int:user_id>/songs/', SongListView.as_view(), name='song-list'),
     path('users/<int:user_id>/songs/<int:song_id>/', SongDetailView.as_view(), name='song-detail'),

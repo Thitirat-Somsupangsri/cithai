@@ -12,6 +12,9 @@ class SunoCallbackService:
         except Song.DoesNotExist as exc:
             raise MusicGenerationCallbackSongNotFoundError('Song not found for this Suno task') from exc
 
+        if song.status == SongStatus.CANCELLED:
+            return song
+
         status = self._resolve_status(payload)
         data = payload.get('data') or {}
         tracks = data.get('data') or []

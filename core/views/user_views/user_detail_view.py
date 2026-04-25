@@ -6,6 +6,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from ...presenters import present_user
+from .._session_auth import require_owned_user
 from ...services import (
     DuplicateEmailError,
     DuplicateUsernameError,
@@ -21,6 +22,9 @@ class UserDetailView(View):
     user_service = UserService()
 
     def get(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             user = self.user_service.get_user(user_id)
         except UserNotFoundError as exc:
@@ -28,6 +32,9 @@ class UserDetailView(View):
         return JsonResponse(present_user(user))
 
     def put(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -45,6 +52,9 @@ class UserDetailView(View):
         return JsonResponse(present_user(user, include_created_at=False))
 
     def delete(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             self.user_service.delete_user(user_id)
         except UserNotFoundError as exc:

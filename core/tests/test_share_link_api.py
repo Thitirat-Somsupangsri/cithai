@@ -5,12 +5,16 @@ from django.test import TestCase
 from django.utils import timezone
 
 from core.models import Library, ShareLink, Song, SongStatus, User
+from core.views._session_auth import SESSION_USER_ID_KEY
 
 
 class ShareLinkApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='gina', email='gina@example.com')
         self.library = Library.objects.create(user=self.user)
+        session = self.client.session
+        session[SESSION_USER_ID_KEY] = self.user.id
+        session.save()
         self.song = Song.objects.create(
             library=self.library,
             status=SongStatus.READY,
@@ -76,3 +80,18 @@ class ShareLinkApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['error'], 'Use expiration_option instead of expiration_date')
+
+    def test_delete_share_link_requires_owner_session(self):
+        link = ShareLink.objects.create(
+            song=self.song,
+            expiration_date=timezone.localdate() + timedelta(days=7),
+        )
+        other = User.objects.create(username='other', email='other@example.com')
+        Library.objects.create(user=other)
+        session = self.client.session
+        session[SESSION_USER_ID_KEY] = other.id
+        session.save()
+
+        response = self.client.delete(f'/share-links/{link.token}/')
+
+        self.assertEqual(response.status_code, 403)

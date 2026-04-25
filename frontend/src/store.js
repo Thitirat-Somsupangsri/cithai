@@ -1,7 +1,6 @@
-const SESSION_KEY = "cithai_front_session_user_id";
-
 async function request(path, options = {}) {
   const response = await fetch(path, {
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {})
@@ -17,7 +16,10 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(payload.error || "Request failed.");
+    const error = new Error(payload.error || "Request failed.");
+    Object.assign(error, payload);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -35,37 +37,33 @@ export async function createUser(payload) {
   });
 }
 
-export async function loginUser(identifier) {
-  const normalized = identifier.trim().toLowerCase();
-  const users = await listUsers();
-  const user = users.find(
-    (item) => item.username.toLowerCase() === normalized || item.email.toLowerCase() === normalized
-  );
-  if (!user) {
-    throw new Error("User not found.");
-  }
-  setSessionUserId(user.id);
-  return user;
+export async function loginUser(identifier, password = "") {
+  const payload = await request("/auth/session/login/", {
+    method: "POST",
+    body: JSON.stringify({ identifier, password }),
+  });
+  return payload.user || null;
 }
 
-export function logoutUser() {
-  localStorage.removeItem(SESSION_KEY);
+export async function changePassword(userId, currentPassword, newPassword) {
+  return request(`/users/${userId}/change-password/`, {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
 }
 
-export function getSessionUserId() {
-  const raw = localStorage.getItem(SESSION_KEY);
-  return raw ? Number(raw) : null;
-}
-
-export function setSessionUserId(userId) {
-  localStorage.setItem(SESSION_KEY, String(userId));
+export async function logoutUser() {
+  return request("/auth/session/logout/", { method: "POST" });
 }
 
 export async function getCurrentUser() {
-  const userId = getSessionUserId();
-  if (!userId) return null;
-  const users = await listUsers();
-  return users.find((user) => user.id === userId) || null;
+  try {
+    const payload = await request("/auth/session/me/");
+    return payload.user || null;
+  } catch (err) {
+    if (err.status === 401) return null;
+    throw err;
+  }
 }
 
 export async function listSongsForUser(userId) {
@@ -86,6 +84,13 @@ export async function createSong(userId, payload) {
 
 export async function deleteSong(userId, songId) {
   return request(`/users/${userId}/songs/${songId}/`, { method: "DELETE" });
+}
+
+export async function cancelSong(userId, songId) {
+  return request(`/users/${userId}/songs/${songId}/`, {
+    method: "PUT",
+    body: JSON.stringify({ action: "cancel" }),
+  });
 }
 
 export async function getProfile(userId) {

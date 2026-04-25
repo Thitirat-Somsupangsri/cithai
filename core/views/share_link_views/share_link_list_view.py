@@ -6,6 +6,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from ...presenters import present_share_link
+from .._session_auth import require_owned_user
 from ...services import (
     ShareLinkCreatePayload,
     ShareLinkPayloadValidationError,
@@ -20,6 +21,9 @@ class ShareLinkListView(View):
     share_link_service = ShareLinkService()
 
     def get(self, request, user_id, song_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             links = self.share_link_service.list_links(user_id, song_id)
         except ShareSongNotFoundError as exc:
@@ -28,6 +32,9 @@ class ShareLinkListView(View):
         return JsonResponse({'share_links': links})
 
     def post(self, request, user_id, song_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:

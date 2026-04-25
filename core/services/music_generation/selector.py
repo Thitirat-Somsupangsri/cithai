@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from .strategies.mock import MockMusicGenerationStrategy
-from .strategies.suno import SunoMusicGenerationStrategy
+from .strategies.mock_music_generation_strategy import MockMusicGenerationStrategy
+from .strategies.suno_music_generation_strategy import SunoMusicGenerationStrategy
 
 
 def get_music_generation_strategy():

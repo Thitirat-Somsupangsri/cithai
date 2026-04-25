@@ -3,11 +3,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 from ..models import Song, SongStatus
-from .music_generation.strategies.mock import (
+from .music_generation.strategies.mock_music_generation_strategy import (
     MOCK_AUDIO_DURATION_SECONDS,
     MOCK_AUDIO_URL,
-    MOCK_GENERATION_DELAY_SECONDS,
 )
+
+MOCK_GENERATION_DELAY_SECONDS = 1
 
 
 class MockGenerationCompletionService:

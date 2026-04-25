@@ -1,3 +1,5 @@
+from django.contrib.auth.hashers import check_password, make_password
+
 from ..models import Library, User
 from .duplicate_email_error import DuplicateEmailError
 from .duplicate_username_error import DuplicateUsernameError
@@ -24,8 +26,24 @@ class UserService:
         if User.objects.filter(email=payload.email).exists():
             raise DuplicateEmailError('email already registered')
 
-        user = User.objects.create(username=payload.username, email=payload.email)
+        hashed = make_password(payload.password) if payload.password else ''
+        user = User.objects.create(username=payload.username, email=payload.email, password=hashed)
         Library.objects.create(user=user)
+        return user
+
+    def verify_password(self, user, raw_password):
+        if not user.password:
+            return True
+        return check_password(raw_password, user.password)
+
+    def change_password(self, user_id, current_password, new_password):
+        user = self.get_user(user_id)
+        if user.password and not check_password(current_password, user.password):
+            raise UserPayloadValidationError('Current password is incorrect')
+        if len(new_password) < 6:
+            raise UserPayloadValidationError('New password must be at least 6 characters')
+        user.password = make_password(new_password)
+        user.save(update_fields=['password'])
         return user
 
     def update_user(self, user_id, payload):

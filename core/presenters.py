@@ -1,5 +1,5 @@
 from .models import SongStatus
-from .services.music_generation.strategies.mock import MOCK_AUDIO_URL
+from .services.music_generation.strategies.mock_music_generation_strategy import MOCK_AUDIO_URL
 
 
 def _present_audio_url(song):

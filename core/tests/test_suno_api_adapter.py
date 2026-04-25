@@ -15,7 +15,7 @@ class SunoApiAdapterTests(TestCase):
         SUNO_CUSTOM_MODE=True,
         SUNO_INSTRUMENTAL=False,
     )
-    @patch('core.services.music_generation.adapters.suno.urllib.request.urlopen')
+    @patch('core.services.music_generation.adapters.suno_api_adapter.urllib.request.urlopen')
     def test_adapter_maps_successful_response(self, mock_urlopen):
         class FakeResponse:
             def __enter__(self):

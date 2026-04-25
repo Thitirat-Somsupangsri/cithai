@@ -1,5 +1,5 @@
 from .content_moderation_service import ContentModerationService, ContentViolationError
-from .song_creation import (
+from .song_creation_service import (
     LibraryFullError,
     LibraryNotFoundError,
     SongCreationPayload,

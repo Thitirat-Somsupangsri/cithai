@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 from ..presenters import present_profile
+from ._session_auth import require_owned_user
 from ..services import (
     ProfileAlreadyExistsError,
     ProfileCreatePayload,
@@ -30,6 +31,9 @@ class ProfileView(View):
     profile_service = ProfileService()
 
     def get(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             profile = self.profile_service.get_profile(user_id)
         except (ProfileNotFoundError, ProfileUserNotFoundError) as exc:
@@ -37,6 +41,9 @@ class ProfileView(View):
         return JsonResponse(present_profile(profile))
 
     def post(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -53,6 +60,9 @@ class ProfileView(View):
         return JsonResponse(present_profile(profile), status=201)
 
     def put(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -69,6 +79,9 @@ class ProfileView(View):
         return JsonResponse(present_profile(profile))
 
     def delete(self, request, user_id):
+        _, err = require_owned_user(request, user_id)
+        if err:
+            return err
         try:
             self.profile_service.delete_profile(user_id)
         except (ProfileNotFoundError, ProfileUserNotFoundError) as exc:

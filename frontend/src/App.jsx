@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 import { genders, genres, occasions, voiceTypes } from "./options";
 import {
+  cancelSong,
   createSong,
   createUser,
   deleteSong,
@@ -28,7 +29,7 @@ import {
   resolveShareLink,
   loginUser,
   logoutUser,
-  setSessionUserId,
+  changePassword,
 } from "./store";
 import "./styles.css";
 
@@ -239,7 +240,7 @@ function AppRoutes() {
       } />
       <Route path="/create-song" element={
         <ProtectedRoute currentUser={currentUser}>
-          <CreateSongPage currentUser={currentUser} onChange={refresh} />
+          <CreateSongPage currentUser={currentUser} onChange={refresh} songs={songs} />
         </ProtectedRoute>
       } />
       <Route path="/songs/:songId" element={
@@ -268,10 +269,13 @@ function ProtectedRoute({ currentUser, children }) {
 function Shell({ currentUser, onLogout, children }) {
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logoutUser();
-    onLogout?.();
-    navigate("/login");
+  async function handleLogout() {
+    try {
+      await logoutUser();
+    } finally {
+      onLogout?.();
+      navigate("/login");
+    }
   }
 
   return (
@@ -319,6 +323,7 @@ function LoginPage({ currentUser, onChange, startupError }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const ref = useRef(null);
@@ -333,7 +338,7 @@ function LoginPage({ currentUser, onChange, startupError }) {
     setLoading(true);
     setError("");
     try {
-      await loginUser(identifier);
+      await loginUser(identifier, password);
       onChange();
       navigate("/library");
     } catch (err) {
@@ -359,6 +364,18 @@ function LoginPage({ currentUser, onChange, startupError }) {
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="melodymaker or artist@example.com"
               autoComplete="username"
+              required
+            />
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
               required
             />
           </div>
@@ -394,7 +411,7 @@ function LoginPage({ currentUser, onChange, startupError }) {
 /* ─── Create User ───────────────────────────────────────────── */
 function CreateUserPage({ currentUser, onChange, startupError }) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const ref = useRef(null);
@@ -404,11 +421,15 @@ function CreateUserPage({ currentUser, onChange, startupError }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      const user = await createUser(form);
-      setSessionUserId(user.id);
+      const user = await createUser({ username: form.username, email: form.email, password: form.password });
+      await loginUser(user.email || form.email, form.password);
       onChange();
       navigate("/library");
     } catch (err) {
@@ -453,6 +474,31 @@ function CreateUserPage({ currentUser, onChange, startupError }) {
               required
             />
           </div>
+          <div className="field">
+            <label className="field-label" htmlFor="new-password">Password</label>
+            <input
+              id="new-password"
+              type="password"
+              value={form.password}
+              onChange={set("password")}
+              placeholder="At least 6 characters"
+              autoComplete="new-password"
+              minLength={6}
+              required
+            />
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="confirm-password">Confirm Password</label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={form.confirm}
+              onChange={set("confirm")}
+              placeholder="Repeat your password"
+              autoComplete="new-password"
+              required
+            />
+          </div>
           {(startupError || error) && (
             <div className="inline-error">{startupError || error}</div>
           )}
@@ -475,10 +521,8 @@ function GoogleCallbackPage({ onChange }) {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const userId = searchParams.get("user_id");
     const oauthError = searchParams.get("oauth_error");
-    if (userId) {
-      setSessionUserId(userId);
+    if (!oauthError) {
       onChange();
       navigate("/library", { replace: true });
     } else if (oauthError) {
@@ -497,6 +541,7 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
   const [regeneratingId, setRegeneratingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
   const [completionNotice, setCompletionNotice] = useState("");
   const ref = useRef(null);
   const previousStatusesRef = useRef(new Map());
@@ -581,7 +626,6 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
         voice_type: detail.voice_type,
         custom_text: detail.custom_text || "",
       });
-      await deleteSong(currentUser.id, songId);
       setActiveFilter(regeneratedSong.status === "failed" ? "failed" : "generating");
       onSongsChange();
     } catch {
@@ -594,6 +638,20 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   async function handlePlayToggle(e, song) {
     e.stopPropagation();
     await toggleSong(song);
+  }
+
+  async function handleCancel(e, songId) {
+    e.stopPropagation();
+    setCancellingId(songId);
+    try {
+      await cancelSong(currentUser.id, songId);
+      setActiveFilter("failed");
+      onSongsChange();
+    } catch {
+      alert("Could not cancel this generation.");
+    } finally {
+      setCancellingId(null);
+    }
   }
 
   const currentSongIndex = currentSong
@@ -668,14 +726,20 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
             <div className="hero-stats">
-              <div className="stat-chip"><strong>{songs.length}</strong> / 20 songs</div>
+              <div className="stat-chip" style={songs.length >= 20 ? { color: "var(--error, #ef4444)", borderColor: "rgba(239,68,68,0.3)", fontWeight: 700 } : {}}>
+                <strong>{songs.length}</strong> / 20 songs
+              </div>
               {generatingCount > 0 && (
                 <div className="stat-chip" style={{ color: "var(--primary)", borderColor: "rgba(255,77,141,0.25)" }}>
                   <strong>{generatingCount}</strong> generating
                 </div>
               )}
             </div>
-            <Link className="btn btn-primary" to="/create-song">+ Create Song</Link>
+            {songs.length >= 20 ? (
+              <button className="btn btn-primary" disabled title="Library is full (20/20 songs)">+ Create Song</button>
+            ) : (
+              <Link className="btn btn-primary" to="/create-song">+ Create Song</Link>
+            )}
           </div>
         </section>
 
@@ -698,6 +762,12 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
               </button>
             ))}
           </div>
+
+          {songs.length >= 20 && (
+            <div className="library-notice" style={{ borderColor: "rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)" }}>
+              <span>Your library is full (20/20 songs). Delete a song to generate more.</span>
+            </div>
+          )}
 
           {completionNotice && (
             <div className="library-notice">
@@ -737,10 +807,12 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
                   onClick={() => navigate(`/songs/${song.id}`)}
                   onDelete={(e) => handleDelete(e, song.id)}
                   onRegenerate={(e) => handleRegenerate(e, song.id)}
+                  onCancel={(e) => handleCancel(e, song.id)}
                   onPlayToggle={(e) => handlePlayToggle(e, song)}
                   isPlaying={activeSongId === song.id}
                   deleting={deletingId === song.id}
                   regenerating={regeneratingId === song.id}
+                  cancelling={cancellingId === song.id}
                 />
               ))}
             </div>
@@ -809,14 +881,18 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
 }
 
 /* ─── Song Card ─────────────────────────────────────────────── */
-function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlaying, deleting, regenerating }) {
+function SongCard({ song, onClick, onDelete, onRegenerate, onCancel, onPlayToggle, isPlaying, deleting, regenerating, cancelling }) {
   const date = new Date(song.created_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
-  const statusLabel = song.status === "generating" ? "Generating" : song.status === "ready" ? "Ready" : "Failed";
+  const statusLabel = song.status === "generating"
+    ? "Generating"
+    : song.status === "ready"
+      ? "Ready"
+      : "Failed";
 
   return (
     <article className="song-card" onClick={onClick} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick()}>
@@ -868,7 +944,16 @@ function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlayi
               onClick={onRegenerate}
               disabled={regenerating}
             >
-              {regenerating ? "Regenerating…" : "Regenerate"}
+              {regenerating ? "Retrying…" : "Retry"}
+            </button>
+          )}
+          {song.status === "generating" && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={onCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? "Cancelling…" : "Cancel"}
             </button>
           )}
           <button
@@ -909,7 +994,7 @@ function checkModeration(...texts) {
 }
 
 /* ─── Create Song Page ──────────────────────────────────────── */
-function CreateSongPage({ currentUser, onChange }) {
+function CreateSongPage({ currentUser, onChange, songs }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
@@ -920,8 +1005,11 @@ function CreateSongPage({ currentUser, onChange }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [serverFlaggedWords, setServerFlaggedWords] = useState([]);
   const ref = useRef(null);
   useGsapFadeUp(ref, []);
+
+  const libraryFull = songs && songs.length >= 20;
 
   const flaggedWords = useMemo(
     () => checkModeration(form.title, form.custom_text),
@@ -929,22 +1017,29 @@ function CreateSongPage({ currentUser, onChange }) {
   );
 
   function set(key) {
-    return (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    return (e) => {
+      setServerFlaggedWords([]);
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    };
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setServerFlaggedWords([]);
     try {
       await createSong(currentUser.id, form);
       onChange();
       navigate("/library");
     } catch (err) {
+      setServerFlaggedWords(err.flagged_words || []);
       setError(err.message || "Failed to create song. Please try again.");
       setLoading(false);
     }
   }
+
+  const visibleFlaggedWords = Array.from(new Set([...flaggedWords, ...serverFlaggedWords]));
 
   return (
     <Shell currentUser={currentUser}>
@@ -1026,14 +1121,20 @@ function CreateSongPage({ currentUser, onChange }) {
                 <p className="char-count">{form.custom_text.length} / 600</p>
               </label>
 
-              {flaggedWords.length > 0 && (
+              {visibleFlaggedWords.length > 0 && (
                 <div className="inline-error full-span">
-                  <strong>Inappropriate content detected.</strong> Please remove the following word{flaggedWords.length > 1 ? "s" : ""}: {flaggedWords.map((w, i) => (
+                  <strong>Inappropriate content detected.</strong> Please remove the following word{visibleFlaggedWords.length > 1 ? "s" : ""}: {visibleFlaggedWords.map((w, i) => (
                     <span key={w}>
                       <mark style={{ background: "rgba(239,68,68,0.18)", color: "inherit", borderRadius: 3, padding: "0 3px" }}>{w}</mark>
-                      {i < flaggedWords.length - 1 ? ", " : ""}
+                      {i < visibleFlaggedWords.length - 1 ? ", " : ""}
                     </span>
                   ))}
+                </div>
+              )}
+
+              {libraryFull && (
+                <div className="inline-error full-span">
+                  Your library is full (20/20 songs). Please delete a song before generating a new one.
                 </div>
               )}
 
@@ -1042,7 +1143,7 @@ function CreateSongPage({ currentUser, onChange }) {
               <button
                 className="btn btn-primary btn-lg full-span"
                 type="submit"
-                disabled={flaggedWords.length > 0}
+                disabled={visibleFlaggedWords.length > 0 || libraryFull}
               >
                 Generate Song
               </button>
@@ -1061,6 +1162,7 @@ function SongDetailPage({ currentUser, onChange }) {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [shareLinks, setShareLinks] = useState([]);
   const [newLinkExpirationOption, setNewLinkExpirationOption] = useState("7_days");
   const [creatingLink, setCreatingLink] = useState(false);
@@ -1129,7 +1231,6 @@ function SongDetailPage({ currentUser, onChange }) {
         voice_type: song.voice_type,
         custom_text: song.custom_text || "",
       });
-      await deleteSong(currentUser.id, songId);
       onChange();
       navigate(`/songs/${regeneratedSong.id}`);
     } catch {
@@ -1148,6 +1249,20 @@ function SongDetailPage({ currentUser, onChange }) {
     if (!song) return;
     setDownloading(true);
     try { await downloadSong(song); } finally { setDownloading(false); }
+  }
+
+  async function handleCancel() {
+    if (!song) return;
+    setCancelling(true);
+    try {
+      const updated = await cancelSong(currentUser.id, songId);
+      setSong((prev) => ({ ...prev, ...updated }));
+      onChange();
+    } catch {
+      alert("Could not cancel this generation.");
+    } finally {
+      setCancelling(false);
+    }
   }
 
   function loadShareLinks() {
@@ -1247,6 +1362,7 @@ function SongDetailPage({ currentUser, onChange }) {
                   {song.error_message || "Generation failed. Please try creating a new song."}
                 </div>
               )}
+
 
               {playbackError && (
                 <div className="inline-error" style={{ marginBottom: 20 }}>
@@ -1378,13 +1494,22 @@ function SongDetailPage({ currentUser, onChange }) {
               </div>
 
               <div className="detail-actions">
+                {song.status === "generating" && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? "Cancelling…" : "Cancel Generation"}
+                  </button>
+                )}
                 {song.status === "failed" && (
                   <button
                     className="btn btn-ghost"
                     onClick={handleRegenerate}
                     disabled={regenerating}
                   >
-                    {regenerating ? "Regenerating…" : "Regenerate Song"}
+                    {regenerating ? "Retrying…" : "Retry Song"}
                   </button>
                 )}
                 <button
@@ -1519,9 +1644,71 @@ function ProfilePage({ currentUser }) {
               </div>
             </div>
           )}
+
+          <ChangePasswordSection currentUser={currentUser} />
         </div>
       </main>
     </Shell>
+  );
+}
+
+function ChangePasswordSection({ currentUser }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  function set(key) {
+    return (e) => { setError(""); setSuccess(""); setForm((p) => ({ ...p, [key]: e.target.value })); };
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (form.next !== form.confirm) { setError("New passwords do not match."); return; }
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await changePassword(currentUser.id, form.current, form.next);
+      setSuccess("Password changed successfully.");
+      setForm({ current: "", next: "", confirm: "" });
+      setOpen(false);
+    } catch (err) {
+      setError(err.message || "Could not change password.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="full-span" style={{ marginTop: 24, borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+      <p className="eyebrow" style={{ marginBottom: 8 }}>Security</p>
+      {success && <div style={{ color: "var(--primary)", marginBottom: 8, fontSize: "0.85rem" }}>{success}</div>}
+      {!open ? (
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>Change Password</button>
+      ) : (
+        <form className="song-form" onSubmit={handleSubmit} style={{ marginTop: 0 }}>
+          <label className="full-span">
+            <span>Current Password</span>
+            <input type="password" value={form.current} onChange={set("current")} placeholder="••••••••" autoComplete="current-password" required />
+          </label>
+          <label>
+            <span>New Password</span>
+            <input type="password" value={form.next} onChange={set("next")} placeholder="At least 6 characters" autoComplete="new-password" minLength={6} required />
+          </label>
+          <label>
+            <span>Confirm New Password</span>
+            <input type="password" value={form.confirm} onChange={set("confirm")} placeholder="Repeat new password" autoComplete="new-password" required />
+          </label>
+          {error && <div className="inline-error full-span">{error}</div>}
+          <div className="full-span" style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? "Saving…" : "Update Password"}</button>
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => { setOpen(false); setError(""); setForm({ current: "", next: "", confirm: "" }); }}>Cancel</button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 

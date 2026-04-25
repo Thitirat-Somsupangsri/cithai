@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="10" value="User" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="60" y="80" width="200" height="170" as="geometry" />
+    </mxCell>
+    <mxCell id="11" value="id : int&#xa;username : str&#xa;email : str&#xa;password : str&#xa;created_at : datetime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;" vertex="1" parent="10">
+      <mxGeometry y="30" width="200" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="12" value="" style="line;strokeColor=#6c8ebf;fillColor=none;" vertex="1" parent="10">
+      <mxGeometry y="130" width="200" height="10" as="geometry" />
+    </mxCell>
+    <mxCell id="13" value="(no methods)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="10">
+      <mxGeometry y="140" width="200" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="20" value="Profile" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="340" y="80" width="200" height="150" as="geometry" />
+    </mxCell>
+    <mxCell id="21" value="id : int&#xa;user_id : int (FK)&#xa;gender : Gender&#xa;birthday : date" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;" vertex="1" parent="20">
+      <mxGeometry y="30" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="22" value="" style="line;strokeColor=#82b366;fillColor=none;" vertex="1" parent="20">
+      <mxGeometry y="110" width="200" height="10" as="geometry" />
+    </mxCell>
+    <mxCell id="23" value="(no methods)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="20">
+      <mxGeometry y="120" width="200" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="30" value="Library" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="60" y="340" width="200" height="170" as="geometry" />
+    </mxCell>
+    <mxCell id="31" value="id : int&#xa;user_id : int (FK)&#xa;MAX_SONGS = 20" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;" vertex="1" parent="30">
+      <mxGeometry y="30" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="32" value="" style="line;strokeColor=#6c8ebf;fillColor=none;" vertex="1" parent="30">
+      <mxGeometry y="110" width="200" height="10" as="geometry" />
+    </mxCell>
+    <mxCell id="33" value="is_full : bool [property]&#xa;song_count : int [property]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="30">
+      <mxGeometry y="120" width="200" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="40" value="Song" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="340" y="320" width="240" height="370" as="geometry" />
+    </mxCell>
+    <mxCell id="41" value="id : int&#xa;library_id : int (FK)&#xa;title : str&#xa;occasion : Occasion&#xa;genre : Genre&#xa;voice_type : VoiceType&#xa;custom_text : str&#xa;provider : str&#xa;provider_generation_id : str&#xa;status : SongStatus&#xa;duration : int (seconds)&#xa;description : str&#xa;error_message : str&#xa;audio_url : str&#xa;callback_url : str&#xa;retry_count : int&#xa;created_at : datetime&#xa;updated_at : datetime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;" vertex="1" parent="40">
+      <mxGeometry y="30" width="240" height="290" as="geometry" />
+    </mxCell>
+    <mxCell id="42" value="" style="line;strokeColor=#6c8ebf;fillColor=none;" vertex="1" parent="40">
+      <mxGeometry y="320" width="240" height="10" as="geometry" />
+    </mxCell>
+    <mxCell id="43" value="is_accessible : bool [property]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="40">
+      <mxGeometry y="330" width="240" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="60" value="ShareLink" style="swimlane;fontStyle=1;align=center;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="340" y="790" width="240" height="200" as="geometry" />
+    </mxCell>
+    <mxCell id="61" value="id : int&#xa;song_id : int (FK)&#xa;token : UUID&#xa;expiration_date : date&#xa;is_active : bool&#xa;created_at : datetime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;" vertex="1" parent="60">
+      <mxGeometry y="30" width="240" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="62" value="" style="line;strokeColor=#d6b656;fillColor=none;" vertex="1" parent="60">
+      <mxGeometry y="150" width="240" height="10" as="geometry" />
+    </mxCell>
+    <mxCell id="63" value="is_valid : bool [property]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="60">
+      <mxGeometry y="160" width="240" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="70" value="enumeration SongStatus" style="swimlane;fontStyle=3;align=center;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="680" y="790" width="170" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="71" value="GENERATING&#xa;READY&#xa;FAILED" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="70">
+      <mxGeometry y="40" width="170" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="72" value="enumeration Gender" style="swimlane;fontStyle=3;align=center;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="680" y="80" width="170" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="73" value="MALE&#xa;FEMALE&#xa;OTHER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="72">
+      <mxGeometry y="40" width="170" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="74" value="enumeration Occasion" style="swimlane;fontStyle=3;align=center;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="680" y="320" width="170" height="170" as="geometry" />
+    </mxCell>
+    <mxCell id="75" value="BIRTHDAY&#xa;WEDDING&#xa;ANNIVERSARY&#xa;ROMANTIC_EVENT&#xa;GRADUATION&#xa;OTHER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="74">
+      <mxGeometry y="40" width="170" height="130" as="geometry" />
+    </mxCell>
+
+    <mxCell id="76" value="enumeration Genre" style="swimlane;fontStyle=3;align=center;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="680" y="520" width="170" height="150" as="geometry" />
+    </mxCell>
+    <mxCell id="77" value="POP&#xa;ROCK&#xa;JAZZ&#xa;CLASSICAL&#xa;OTHER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="76">
+      <mxGeometry y="40" width="170" height="110" as="geometry" />
+    </mxCell>
+
+    <mxCell id="78" value="enumeration VoiceType" style="swimlane;fontStyle=3;align=center;startSize=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="680" y="700" width="170" height="160" as="geometry" />
+    </mxCell>
+    <mxCell id="79" value="BABY&#xa;GROWN_WOMAN&#xa;GROWN_MAN&#xa;GIRL&#xa;BOY" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;" vertex="1" parent="78">
+      <mxGeometry y="40" width="170" height="120" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r1" value="" style="endArrow=none;endFill=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="10" target="20">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r1a" value="1" style="resizable=0;html=1;align=left;verticalAlign=bottom;" connectable="0" vertex="1" parent="r1">
+      <mxGeometry x="-1" relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r1b" value="0..1" style="resizable=0;html=1;align=right;verticalAlign=bottom;" connectable="0" vertex="1" parent="r1">
+      <mxGeometry x="1" relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r2" value="" style="endArrow=none;endFill=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="10" target="30">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r2a" value="1" style="resizable=0;html=1;align=left;verticalAlign=bottom;" connectable="0" vertex="1" parent="r2">
+      <mxGeometry x="-1" relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r2b" value="1" style="resizable=0;html=1;align=right;verticalAlign=bottom;" connectable="0" vertex="1" parent="r2">
+      <mxGeometry x="1" relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r3" value="" style="endArrow=none;endFill=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="30" target="40">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r3a" value="1" style="resizable=0;html=1;align=left;verticalAlign=bottom;" connectable="0" vertex="1" parent="r3">
+      <mxGeometry x="-1" relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r3b" value="0..20" style="resizable=0;html=1;align=right;verticalAlign=bottom;" connectable="0" vertex="1" parent="r3">
+      <mxGeometry x="1" relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r5" value="" style="endArrow=none;endFill=0;strokeColor=#d6b656;" edge="1" parent="1" source="40" target="60">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r5a" value="1" style="resizable=0;html=1;align=left;verticalAlign=bottom;" connectable="0" vertex="1" parent="r5">
+      <mxGeometry x="-1" relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r5b" value="0..*" style="resizable=0;html=1;align=right;verticalAlign=bottom;" connectable="0" vertex="1" parent="r5">
+      <mxGeometry x="1" relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r6" value="uses" style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="40" target="70">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r7" value="uses" style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="20" target="72">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r8" value="uses" style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="40" target="74">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r9" value="uses" style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="40" target="76">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="r10" value="uses" style="endArrow=open;endFill=0;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="40" target="78">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
