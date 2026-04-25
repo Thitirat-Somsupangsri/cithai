@@ -188,22 +188,6 @@ Then copy the public HTTPS URL and set:
 BACKEND_PUBLIC_URL=https://your-public-url.example
 ```
 
-With that value, Django automatically builds:
-
-```text
-https://your-public-url.example/integrations/suno/callback/
-```
-
-as the effective `SUNO_CALLBACK_URL`.
-
-If you want Django to use your ngrok URL, put the ngrok HTTPS URL into:
-
-```env
-BACKEND_PUBLIC_URL=https://your-ngrok-url.ngrok-free.app
-```
-
-or set the callback explicitly:
-
 ```env
 SUNO_CALLBACK_URL=https://your-public-url.example/integrations/suno/callback/
 ```
