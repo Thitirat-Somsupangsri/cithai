@@ -93,6 +93,13 @@ export async function cancelSong(userId, songId) {
   });
 }
 
+export async function regenerateSong(userId, songId) {
+  return request(`/users/${userId}/songs/${songId}/`, {
+    method: "PUT",
+    body: JSON.stringify({ action: "regenerate" }),
+  });
+}
+
 export async function getProfile(userId) {
   return request(`/users/${userId}/profile/`);
 }

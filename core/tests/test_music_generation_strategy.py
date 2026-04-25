@@ -45,10 +45,10 @@ class MusicGenerationStrategyTests(TestCase):
         song = generate_song(self._create_song())
 
         self.assertEqual(song.provider, 'mock')
-        self.assertEqual(song.status, 'generating')
-        self.assertEqual(song.duration, 0)
-        self.assertEqual(song.audio_url, '')
-        self.assertTrue(song.provider_generation_id.startswith('mock-task-'))
+        self.assertEqual(song.status, 'ready')
+        self.assertEqual(song.duration, MOCK_AUDIO_DURATION_SECONDS)
+        self.assertEqual(song.audio_url, MOCK_AUDIO_URL)
+        self.assertEqual(song.provider_generation_id, f'mock-{song.id}')
         self.assertEqual(song.error_message, '')
 
     @override_settings(

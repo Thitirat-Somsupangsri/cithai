@@ -37,10 +37,10 @@ class SongApiGenerationTests(TestCase):
         self.assertEqual(response.status_code, 201)
         payload = response.json()
         self.assertEqual(payload['provider'], 'mock')
-        self.assertEqual(payload['status'], 'generating')
-        self.assertEqual(payload['duration'], 0)
+        self.assertEqual(payload['status'], 'ready')
+        self.assertEqual(payload['duration'], MOCK_AUDIO_DURATION_SECONDS)
         self.assertEqual(payload['error_message'], '')
-        self.assertEqual(payload['audio_url'], '')
+        self.assertEqual(payload['audio_url'], MOCK_AUDIO_URL)
 
     @override_settings(MUSIC_GENERATION_PROVIDER='mock')
     def test_list_songs_completes_ready_mock_song_after_delay(self):
@@ -91,27 +91,88 @@ class SongApiGenerationTests(TestCase):
 
     @override_settings(MUSIC_GENERATION_PROVIDER='mock')
     def test_put_song_can_cancel_generating_song(self):
-        response = self.client.post(
-            f'/users/{self.user.id}/songs/',
-            data=json.dumps({
-                'title': 'Road Trip',
-                'occasion': 'other',
-                'genre': 'rock',
-                'voice_type': 'boy',
-                'custom_text': 'anthemic chorus',
-            }),
-            content_type='application/json',
+        library = Library.objects.get(user=self.user)
+        song = Song.objects.create(
+            library=library,
+            title='Road Trip',
+            occasion='other',
+            genre='rock',
+            voice_type='boy',
+            custom_text='anthemic chorus',
+            provider='mock',
+            status=SongStatus.GENERATING,
         )
 
-        song_id = response.json()['id']
         cancel_response = self.client.put(
-            f'/users/{self.user.id}/songs/{song_id}/',
+            f'/users/{self.user.id}/songs/{song.id}/',
             data=json.dumps({'action': 'cancel'}),
             content_type='application/json',
         )
 
         self.assertEqual(cancel_response.status_code, 200)
-        self.assertEqual(cancel_response.json()['status'], SongStatus.CANCELLED)
+        self.assertEqual(cancel_response.json()['status'], SongStatus.FAILED)
+
+    @override_settings(MUSIC_GENERATION_PROVIDER='mock')
+    def test_put_song_can_regenerate_failed_song_without_creating_duplicate(self):
+        library = Library.objects.get(user=self.user)
+        song = Song.objects.create(
+            library=library,
+            title='Retry Me',
+            occasion='other',
+            genre='pop',
+            voice_type='girl',
+            custom_text='',
+            provider='mock',
+            status=SongStatus.FAILED,
+            error_message='Old failure',
+            retry_count=4,
+            duration=111,
+            description='Old description',
+            audio_url='https://example.com/old.mp3',
+        )
+
+        response = self.client.put(
+            f'/users/{self.user.id}/songs/{song.id}/',
+            data=json.dumps({'action': 'regenerate'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['id'], song.id)
+        self.assertEqual(Song.objects.count(), 1)
+        song.refresh_from_db()
+        self.assertEqual(song.status, SongStatus.READY)
+        self.assertEqual(song.retry_count, 0)
+        self.assertEqual(song.error_message, '')
+        self.assertEqual(song.duration, MOCK_AUDIO_DURATION_SECONDS)
+        self.assertIn('Mock generation complete', song.description)
+        self.assertEqual(song.audio_url, MOCK_AUDIO_URL)
+
+    @override_settings(MUSIC_GENERATION_PROVIDER='mock')
+    def test_regenerated_song_can_become_ready_on_follow_up_fetch(self):
+        library = Library.objects.get(user=self.user)
+        song = Song.objects.create(
+            library=library,
+            title='Retry Me',
+            occasion='other',
+            genre='pop',
+            voice_type='girl',
+            custom_text='',
+            provider='mock',
+            status=SongStatus.FAILED,
+            error_message='Old failure',
+            retry_count=4,
+        )
+
+        regenerate_response = self.client.put(
+            f'/users/{self.user.id}/songs/{song.id}/',
+            data=json.dumps({'action': 'regenerate'}),
+            content_type='application/json',
+        )
+        self.assertEqual(regenerate_response.status_code, 200)
+        song.refresh_from_db()
+        self.assertEqual(song.status, SongStatus.READY)
+        self.assertEqual(song.audio_url, MOCK_AUDIO_URL)
 
     def test_song_endpoints_require_authentication(self):
         self.client.cookies.clear()

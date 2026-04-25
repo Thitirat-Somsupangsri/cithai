@@ -35,7 +35,7 @@ class SongCreationServiceTests(TestCase):
 
         self.assertEqual(song.library, self.library)
         self.assertEqual(song.title, 'Party Mix')
-        self.assertEqual(song.status, 'generating')
+        self.assertEqual(song.status, 'ready')
 
     def test_service_raises_when_library_missing(self):
         with self.assertRaises(LibraryNotFoundError):

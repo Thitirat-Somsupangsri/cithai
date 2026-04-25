@@ -17,6 +17,7 @@ import {
   createUser,
   deleteSong,
   downloadSong,
+  regenerateSong,
   getSongById,
   getCurrentUser,
   getProfile,
@@ -618,15 +619,8 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
     e.stopPropagation();
     setRegeneratingId(songId);
     try {
-      const detail = await getSongById(currentUser.id, songId);
-      const regeneratedSong = await createSong(currentUser.id, {
-        title: detail.title,
-        occasion: detail.occasion,
-        genre: detail.genre,
-        voice_type: detail.voice_type,
-        custom_text: detail.custom_text || "",
-      });
-      setActiveFilter(regeneratedSong.status === "failed" ? "failed" : "generating");
+      const regeneratedSong = await regenerateSong(currentUser.id, songId);
+      setActiveFilter(regeneratedSong.status);
       onSongsChange();
     } catch {
       alert("Could not regenerate this song. Please try again.");
@@ -1224,15 +1218,9 @@ function SongDetailPage({ currentUser, onChange }) {
     if (!song) return;
     setRegenerating(true);
     try {
-      const regeneratedSong = await createSong(currentUser.id, {
-        title: song.title,
-        occasion: song.occasion,
-        genre: song.genre,
-        voice_type: song.voice_type,
-        custom_text: song.custom_text || "",
-      });
+      const regeneratedSong = await regenerateSong(currentUser.id, song.id);
+      setSong((prev) => ({ ...prev, ...regeneratedSong }));
       onChange();
-      navigate(`/songs/${regeneratedSong.id}`);
     } catch {
       alert("Could not regenerate this song.");
       setRegenerating(false);

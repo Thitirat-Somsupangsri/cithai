@@ -67,6 +67,38 @@ class SunoCallbackApiTests(TestCase):
         self.assertEqual(self.song.status, SongStatus.FAILED)
         self.assertEqual(self.song.error_message, 'content violation')
 
+    def test_complete_callback_can_move_failed_song_back_to_ready(self):
+        self.song.status = SongStatus.FAILED
+        self.song.error_message = 'content violation'
+        self.song.save(update_fields=['status', 'error_message', 'updated_at'])
+
+        response = self.client.post(
+            '/integrations/suno/callback/',
+            data=json.dumps({
+                'code': 200,
+                'msg': 'success',
+                'data': {
+                    'task_id': 'task-123',
+                    'callbackType': 'complete',
+                    'data': [
+                        {
+                            'title': 'Recovered Track',
+                            'duration': 201,
+                            'audio_url': 'https://cdn.example.com/recovered.mp3',
+                        }
+                    ],
+                },
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.song.refresh_from_db()
+        self.assertEqual(self.song.status, SongStatus.READY)
+        self.assertEqual(self.song.description, 'Recovered Track')
+        self.assertEqual(self.song.error_message, '')
+        self.assertEqual(self.song.audio_url, 'https://cdn.example.com/recovered.mp3')
+
     def test_callback_requires_task_id(self):
         response = self.client.post(
             '/integrations/suno/callback/',

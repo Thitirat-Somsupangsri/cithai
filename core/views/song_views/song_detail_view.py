@@ -9,6 +9,7 @@ from ...models import Song
 from ...presenters import present_song_detail, present_song_generation
 from ...services.generation_timeout_service import GenerationTimeoutService
 from ...services.mock_generation_completion_service import MockGenerationCompletionService
+from ...services.music_generation import generate_song
 from .._session_auth import require_owned_user
 
 
@@ -56,6 +57,12 @@ class SongDetailView(View):
             song.status = 'failed'
             song.error_message = 'Generation cancelled by user.'
             song.save(update_fields=['status', 'error_message', 'updated_at'])
+            return JsonResponse(present_song_generation(song))
+
+        if data.get('action') == 'regenerate':
+            if song.status == 'generating':
+                return JsonResponse({'error': 'Song is already generating'}, status=409)
+            song = generate_song(song)
             return JsonResponse(present_song_generation(song))
 
         if 'status' in data:

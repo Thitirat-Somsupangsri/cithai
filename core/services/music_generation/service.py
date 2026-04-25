@@ -9,6 +9,7 @@ def generate_song(song):
 
     song.provider = strategy.provider_name
     song.status = 'generating'
+    song.retry_count = 0
     song.duration = 0
     song.description = ''
     song.error_message = ''
@@ -17,7 +18,7 @@ def generate_song(song):
     song.audio_url = ''
     song.save(
         update_fields=[
-            'provider', 'status', 'duration', 'description',
+            'provider', 'status', 'retry_count', 'duration', 'description',
             'error_message', 'provider_generation_id',
             'callback_url', 'audio_url', 'updated_at',
         ]
