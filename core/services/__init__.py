@@ -1,3 +1,4 @@
+from .content_moderation_service import ContentModerationService, ContentViolationError
 from .song_creation import (
     LibraryFullError,
     LibraryNotFoundError,
@@ -34,6 +35,8 @@ from .user_service import (
 )
 
 __all__ = [
+    'ContentModerationService',
+    'ContentViolationError',
     'LibraryFullError',
     'LibraryNotFoundError',
     'DuplicateEmailError',

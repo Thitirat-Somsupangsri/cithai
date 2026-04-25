@@ -9,6 +9,7 @@ from ...models import Library
 from ...presenters import present_song_generation, present_song_summary
 from ...services.generation_timeout_service import GenerationTimeoutService
 from ...services import (
+    ContentViolationError,
     LibraryFullError,
     LibraryNotFoundError,
     SongCreationPayload,
@@ -47,6 +48,11 @@ class SongListView(View):
         try:
             payload = SongCreationPayload.from_dict(data)
             song = self.creation_service.create_for_user(user_id, payload)
+        except ContentViolationError as exc:
+            return JsonResponse(
+                {'error': str(exc), 'flagged_words': exc.flagged_words},
+                status=exc.status_code,
+            )
         except (LibraryNotFoundError, LibraryFullError, SongPayloadValidationError) as exc:
             return JsonResponse({'error': str(exc)}, status=exc.status_code)
 

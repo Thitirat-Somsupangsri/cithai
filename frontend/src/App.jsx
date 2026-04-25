@@ -53,6 +53,7 @@ function useGsapFadeUp(ref, deps = []) {
 function useAudioPlayback() {
   const audioRef = useRef(null);
   const [activeSongId, setActiveSongId] = useState(null);
+  const [currentSong, setCurrentSong] = useState(null);
   const [playbackError, setPlaybackError] = useState("");
 
   useEffect(() => {
@@ -78,20 +79,15 @@ function useAudioPlayback() {
     };
   }, []);
 
-  async function toggleSong(song) {
+  async function playSong(song) {
     const audio = audioRef.current;
     const audioUrl = song?.audio_url || (song?.provider === "mock" ? "/mock-song.mp3" : null);
     if (!audio || !audioUrl) return;
 
     setPlaybackError("");
+    setCurrentSong(song);
 
-    if (activeSongId === song.id && !audio.paused) {
-      audio.pause();
-      setActiveSongId(null);
-      return;
-    }
-
-    if (audio.src !== audioUrl) {
+    if (currentSong?.id !== song.id) {
       audio.src = audioUrl;
       audio.load();
     }
@@ -105,6 +101,30 @@ function useAudioPlayback() {
     }
   }
 
+  async function toggleSong(song) {
+    const audio = audioRef.current;
+    if (!audio || !song) return;
+
+    if (currentSong?.id === song.id && !audio.paused) {
+      audio.pause();
+      setActiveSongId(null);
+      return;
+    }
+
+    if (currentSong?.id === song.id && audio.paused) {
+      try {
+        await audio.play();
+        setActiveSongId(song.id);
+      } catch {
+        setActiveSongId(null);
+        setPlaybackError("Playback was blocked. Try pressing play again.");
+      }
+      return;
+    }
+
+    await playSong(song);
+  }
+
   function stopPlayback() {
     const audio = audioRef.current;
     if (!audio) return;
@@ -112,12 +132,36 @@ function useAudioPlayback() {
     setActiveSongId(null);
   }
 
+  function clearPlayback() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    setActiveSongId(null);
+    setCurrentSong(null);
+  }
+
+  function seekBy(seconds) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const duration = Number.isFinite(audio.duration) ? audio.duration : null;
+    const nextTime = audio.currentTime + seconds;
+    audio.currentTime = duration == null
+      ? Math.max(0, nextTime)
+      : Math.min(Math.max(0, nextTime), duration);
+  }
+
   return {
     audioRef,
     activeSongId,
+    currentSong,
     playbackError,
+    clearPlayback,
+    playSong,
     setActiveSongId,
     setPlaybackError,
+    seekBy,
     stopPlayback,
     toggleSong,
   };
@@ -459,11 +503,22 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
   const {
     audioRef,
     activeSongId,
+    currentSong,
     playbackError,
+    clearPlayback,
+    playSong,
+    seekBy,
     stopPlayback,
     toggleSong,
   } = useAudioPlayback();
   useGsapFadeUp(ref, [songs.length]);
+
+  const playableSongs = useMemo(
+    () => songs.filter((song) => song.status === "ready" && (song.audio_url || song.provider === "mock")),
+    [songs]
+  );
+
+  const [playerSnapshot, setPlayerSnapshot] = useState({ currentTime: 0, duration: 0 });
 
   const filteredSongs = useMemo(() => {
     if (activeFilter === "all") return songs;
@@ -501,7 +556,7 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
     e.stopPropagation();
     if (!confirm("Delete this song?")) return;
     if (activeSongId === songId) {
-      stopPlayback();
+      clearPlayback();
     }
     setDeletingId(songId);
     try {
@@ -540,6 +595,65 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
     e.stopPropagation();
     await toggleSong(song);
   }
+
+  const currentSongIndex = currentSong
+    ? playableSongs.findIndex((song) => song.id === currentSong.id)
+    : -1;
+
+  const hasPreviousSong = currentSongIndex > 0;
+  const hasNextSong = currentSongIndex >= 0 && currentSongIndex < playableSongs.length - 1;
+
+  async function handlePlayPrevious() {
+    if (!hasPreviousSong) return;
+    await playSong(playableSongs[currentSongIndex - 1]);
+  }
+
+  async function handlePlayNext() {
+    if (!hasNextSong) {
+      stopPlayback();
+      return;
+    }
+    await playSong(playableSongs[currentSongIndex + 1]);
+  }
+
+  async function handleTrackEnded() {
+    if (hasNextSong) {
+      await playSong(playableSongs[currentSongIndex + 1]);
+      return;
+    }
+    setPlayerSnapshot((snapshot) => ({ ...snapshot, currentTime: 0 }));
+  }
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    function syncPlayerSnapshot() {
+      setPlayerSnapshot({
+        currentTime: audio.currentTime || 0,
+        duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+      });
+    }
+
+    audio.addEventListener("timeupdate", syncPlayerSnapshot);
+    audio.addEventListener("loadedmetadata", syncPlayerSnapshot);
+    audio.addEventListener("pause", syncPlayerSnapshot);
+    audio.addEventListener("play", syncPlayerSnapshot);
+
+    return () => {
+      audio.removeEventListener("timeupdate", syncPlayerSnapshot);
+      audio.removeEventListener("loadedmetadata", syncPlayerSnapshot);
+      audio.removeEventListener("pause", syncPlayerSnapshot);
+      audio.removeEventListener("play", syncPlayerSnapshot);
+    };
+  }, [audioRef]);
+
+  useEffect(() => {
+    if (!currentSong) return;
+    if (playableSongs.some((song) => song.id === currentSong.id)) return;
+    clearPlayback();
+    setPlayerSnapshot({ currentTime: 0, duration: 0 });
+  }, [clearPlayback, currentSong, playableSongs]);
 
   const readyCount = songs.filter((s) => s.status === "ready").length;
   const generatingCount = songs.filter((s) => s.status === "generating").length;
@@ -632,8 +746,63 @@ function LibraryPage({ currentUser, songs, onLogout, onSongsChange }) {
             </div>
           )}
 
-          <audio ref={audioRef} preload="none" hidden />
+          <audio ref={audioRef} preload="none" hidden onEnded={() => { void handleTrackEnded(); }} />
         </div>
+
+        {currentSong && (
+          <div className="bottom-player fade-up">
+            <div className="bottom-player-track">
+              <p className="bottom-player-label">Now playing</p>
+              <strong>{currentSong.title}</strong>
+              <span>{formatDuration(playerSnapshot.currentTime)} / {formatDuration(playerSnapshot.duration || currentSong.duration || 0)}</span>
+            </div>
+
+            <div className="bottom-player-controls">
+              <button
+                type="button"
+                className="player-icon-button"
+                onClick={() => { void handlePlayPrevious(); }}
+                disabled={!hasPreviousSong}
+                aria-label="Previous song"
+              >
+                <span className="player-skip-icon player-skip-icon-backward" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="player-icon-button"
+                onClick={() => seekBy(-10)}
+                aria-label="Back 10 seconds"
+              >
+                <span className="player-jump-label" aria-hidden="true">10</span>
+              </button>
+              <button
+                type="button"
+                className="player-icon-button player-icon-button-primary"
+                onClick={() => { void toggleSong(currentSong); }}
+                aria-label={activeSongId === currentSong.id ? "Pause song" : "Play song"}
+              >
+                <span className={activeSongId === currentSong.id ? "player-pause-icon" : "player-play-icon"} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="player-icon-button"
+                onClick={() => seekBy(10)}
+                aria-label="Forward 10 seconds"
+              >
+                <span className="player-jump-label" aria-hidden="true">10</span>
+              </button>
+              <button
+                type="button"
+                className="player-icon-button"
+                onClick={() => { void handlePlayNext(); }}
+                disabled={!hasNextSong}
+                aria-label="Next song"
+              >
+                <span className="player-skip-icon player-skip-icon-forward" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </Shell>
   );
@@ -684,10 +853,13 @@ function SongCard({ song, onClick, onDelete, onRegenerate, onPlayToggle, isPlayi
           )}
           {song.status === "ready" && (song.audio_url || song.provider === "mock") && (
             <button
-              className={`btn btn-sm ${isPlaying ? "btn-ghost" : "btn-primary"}`}
+              type="button"
+              className={`player-card-button ${isPlaying ? "is-playing" : ""}`}
               onClick={onPlayToggle}
+              aria-label={isPlaying ? `Pause ${song.title}` : `Play ${song.title}`}
             >
-              {isPlaying ? "Pause" : "Play Song"}
+              <span className={isPlaying ? "player-pause-icon" : "player-play-icon"} aria-hidden="true" />
+              <span>{isPlaying ? "Pause" : "Play"}</span>
             </button>
           )}
           {song.status === "failed" && (
@@ -723,6 +895,19 @@ function Waveform() {
   );
 }
 
+/* ─── Content Moderation ────────────────────────────────────── */
+const BLOCKED_WORDS = [
+  "hate", "kill", "murder", "rape", "fuck", "shit", "bitch", "bastard",
+  "asshole", "damn", "cunt", "dick", "cock", "pussy", "nigger", "faggot",
+  "whore", "slut", "retard", "nazi", "terrorist", "bomb", "suicide",
+  "violence", "abuse", "porn", "explicit",
+];
+
+function checkModeration(...texts) {
+  const lower = texts.join(" ").toLowerCase();
+  return BLOCKED_WORDS.filter((w) => lower.includes(w));
+}
+
 /* ─── Create Song Page ──────────────────────────────────────── */
 function CreateSongPage({ currentUser, onChange }) {
   const navigate = useNavigate();
@@ -737,6 +922,11 @@ function CreateSongPage({ currentUser, onChange }) {
   const [error, setError] = useState("");
   const ref = useRef(null);
   useGsapFadeUp(ref, []);
+
+  const flaggedWords = useMemo(
+    () => checkModeration(form.title, form.custom_text),
+    [form.title, form.custom_text]
+  );
 
   function set(key) {
     return (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -836,9 +1026,24 @@ function CreateSongPage({ currentUser, onChange }) {
                 <p className="char-count">{form.custom_text.length} / 600</p>
               </label>
 
+              {flaggedWords.length > 0 && (
+                <div className="inline-error full-span">
+                  <strong>Inappropriate content detected.</strong> Please remove the following word{flaggedWords.length > 1 ? "s" : ""}: {flaggedWords.map((w, i) => (
+                    <span key={w}>
+                      <mark style={{ background: "rgba(239,68,68,0.18)", color: "inherit", borderRadius: 3, padding: "0 3px" }}>{w}</mark>
+                      {i < flaggedWords.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {error && <div className="inline-error full-span">{error}</div>}
 
-              <button className="btn btn-primary btn-lg full-span" type="submit">
+              <button
+                className="btn btn-primary btn-lg full-span"
+                type="submit"
+                disabled={flaggedWords.length > 0}
+              >
                 Generate Song
               </button>
             </form>

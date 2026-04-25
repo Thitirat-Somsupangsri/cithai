@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from ..models import Library, Song, SongParameters, SongStatus
 from .music_generation import generate_song
+from .content_moderation_service import ContentModerationService, ContentViolationError
 
 
 class SongCreationError(Exception):
@@ -45,10 +46,16 @@ class SongCreationPayload:
 
 
 class SongCreationService:
+    moderation_service = ContentModerationService()
+
     def create_for_user(self, user_id, payload):
         library = self._get_library(user_id)
         if library.is_full:
             raise LibraryFullError(f'Library is full (max {Library.MAX_SONGS} songs)')
+
+        flagged = self.moderation_service.validate(payload.title, payload.custom_text)
+        if flagged:
+            raise ContentViolationError(flagged)
 
         song = Song.objects.create(library=library, status=SongStatus.GENERATING)
         SongParameters.objects.create(

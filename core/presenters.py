@@ -3,6 +3,7 @@ def present_song_summary(song):
     return {
         'id': song.id,
         'title': song.title,
+        'provider': song.provider,
         'status': song.status,
         'duration': song.duration,
         'description': song.description,
